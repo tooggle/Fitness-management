@@ -1,0 +1,9 @@
+*.class
+*.dll
+*.exe
+*.log
+*.tmp
+*.swp
+.idea/
+/backEnd/target
+/frontend/node_modules
