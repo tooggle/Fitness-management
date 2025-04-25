@@ -118,35 +118,44 @@
     </div>
 </template>
 
-<script>
-import foodBG2 from '../assets/images/foodBG2.jpg';
-import axios from 'axios';
+<script lang="ts">
+import { defineComponent } from 'vue';
 import { ElNotification } from 'element-plus';
+import { CirclePlusFilled, Plus, UploadFilled } from '@element-plus/icons-vue';
+import { mealPlanApi } from '../api/services';
+import foodBG2 from '../assets/images/foodBG2.jpg';
 
-export default {
-    name: 'addDiet',
+interface Recipe {
+    recipeID?: number;
+    title: string;
+    imgUrl: string;
+    content: string;
+    releaseTime?: Date;
+}
+
+export default defineComponent({
+    components: {
+        CirclePlusFilled,
+        Plus,
+        UploadFilled
+    },
     data() {
         return {
             recipe: {
+                title: '',
+                imgUrl: '',
+                content: '',
                 recipeID: 0,
-                title: "",
-                imgUrl: "",
-                content: "",
-                releaseTime: "",
-            },
-            currentRecipe: {
-                recipeID: 0,
-                title: "",
-                imgUrl: "",
-                content: "",
-                releaseTime: "",
-            },
-            allRecipe: [],
-            dialogVisible: false,
+                releaseTime: new Date()
+            } as Recipe,
             showRec: false,
-            imageUrl: "",
-            i: 0,
+            dialogVisible: false,
             showDietContext: false,
+            currentRecipe: {} as Recipe,
+            recipeID: 0,
+            allRecipe: [] as Recipe[],
+            imageUrl: '',
+            i: 0,
             currentPage: 1,
             pageSize: 3,
             foodBG2
@@ -154,14 +163,18 @@ export default {
     },
     computed: {
         paginatedRecipes() {
+            // 分页显示
             const start = (this.currentPage - 1) * this.pageSize;
             const end = this.currentPage * this.pageSize;
             return this.allRecipe.slice(start, end);
+        },
+        totalPages() {
+            return Math.ceil(this.allRecipe.length / this.pageSize);
         }
     },
     methods: {
-        formatDate(date) {
-            if (!(date instanceof Date)) {
+        formatDate(date: Date | undefined): string {
+            if (!date || !(date instanceof Date)) {
                 return '';
             }
             const year = date.getFullYear();
@@ -169,25 +182,37 @@ export default {
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`; // 格式化为 yyyy-mm-dd
         },
-        beforeAvatarUpload(file) {
+        beforeAvatarUpload(file: File) {
             this.imageUrl = '';
             const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png';
             const isLt2M = file.size / 1024 / 1024 < 2;
 
             if (!isJPGorPNG) {
-                this.$message.error('上传头像图片只能是 JPG 或 PNG 格式!');
+                ElNotification({
+                    title: '错误',
+                    message: '上传头像图片只能是 JPG 或 PNG 格式!',
+                    type: 'error',
+                    duration: 2000
+                });
                 return false;
             }
             if (!isLt2M) {
-                this.$message.error('上传头像图片大小不能超过 2MB!');
+                ElNotification({
+                    title: '错误',
+                    message: '上传头像图片大小不能超过 2MB!',
+                    type: 'error',
+                    duration: 2000
+                });
                 return false;
             }
 
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
-                this.imageUrl = reader.result;
+                if (reader.result) {
+                    this.imageUrl = reader.result.toString();
                 this.recipe.imgUrl = this.imageUrl;
+                }
             };
             return false;
         },
@@ -213,40 +238,46 @@ export default {
                 });
             }
             this.recipe = {
+                title: '',
+                imgUrl: '',
+                content: '',
                 recipeID: 0,
-                title: "",
-                imgUrl: "",
-                content: "",
-                releaseTime: "",
+                releaseTime: new Date()
             };
             this.imageUrl = '';
         },
-        getDietInto(item) {
+        getDietInto(item: Recipe) {
             const truncatedText = item.content.slice(0, 100);
             const hasMore = item.content.length > 100;
             return hasMore ? `${truncatedText}...` : truncatedText;
         },
-        showDiet(item) {
+        showDiet(item: Recipe) {
             this.showDietContext = true;
             this.currentRecipe = { ...item };
             this.imageUrl = this.currentRecipe.imgUrl;
         },
-        showModi(item) {
+        showModi(item: Recipe) {
             this.showRec = true;
             this.currentRecipe = { ...item };
         },
-        deleteItem(item) {
+        deleteItem(item: Recipe) {
             // 查找要删除的项的索引
+            if (item.recipeID === undefined) return;
+            
             const index = this.allRecipe.findIndex(recipe => recipe.recipeID === item.recipeID);
 
             // 如果找到了索引，则删除该项
             if (index !== -1) {
                 const recipe = this.allRecipe[index];
+                if (recipe.recipeID !== undefined) {
                 this.deleteRecipe(recipe.recipeID);
+                }
                 this.allRecipe.splice(index, 1);
             }
         },
         saveModi() {
+            if (this.currentRecipe.recipeID === undefined) return;
+            
             const index = this.allRecipe.findIndex(recipe => recipe.recipeID === this.currentRecipe.recipeID);
             if (index !== -1) {
                 if (this.currentRecipe.title && this.currentRecipe.imgUrl && this.currentRecipe.content) {
@@ -269,16 +300,16 @@ export default {
         formattedDescription() {
             return this.currentRecipe.content.replace(/\n/g, '<br>');
         },
-        handlePageChange(val) {
+        handlePageChange(val: number) {
             this.currentPage = val;
         },
 
         // 得到食谱函数
         getRecipeFromDB() {
-            axios.get('http://localhost:8080/api/MealPlans/GetAllRecipes')
+            mealPlanApi.getAllRecipes()
                 .then(response => {
                     this.allRecipe = [];
-                    response.data.recipes.forEach(item => {
+                    response.data.data.recipes.forEach((item: { recipeID: number; title: string; imgUrl: string; content: string; releaseTime: string }) => {
                         const time = new Date(item.releaseTime);
                         this.allRecipe.push({
                             recipeID: item.recipeID,
@@ -286,9 +317,9 @@ export default {
                             imgUrl: item.imgUrl,
                             content: item.content,
                             releaseTime: time
-                        })
-                    })
-                })
+                        });
+                    });
+                });
         },
         // 插入食物信息
         sendRecipeToDB() {
@@ -296,63 +327,65 @@ export default {
                 title: this.recipe.title,
                 imgUrl: this.recipe.imgUrl,
                 content: this.recipe.content
-            }
+            };
             console.log(requestData);
-            axios.post('http://localhost:8080/api/MealPlans/InsertRecipe', requestData)
+            mealPlanApi.insertRecipe(requestData)
                 .then(response => {
-                    this.recipe.recipeID = response.data.recipeID;
-                    this.recipe.releaseTime = new Date(response.data.releaseTime);
-                    console.log(response.data.message);
+                    this.recipe.recipeID = response.data.data.recipeID;
+                    this.recipe.releaseTime = new Date(response.data.data.releaseTime);
+                    console.log(response.data.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.message,
+                        message: response.data.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                })
+                });
         },
         // 更新食物信息
         UpdateRecipeToDB() {
-            const requestData = {
-                recipeID: this.recipeID,
-                title: this.currentRecipe.title,
-                imgUrl: this.currentRecipe.imgUrl,
-                content: this.currentRecipe.content,
+            if (!this.currentRecipe || this.currentRecipe.recipeID === undefined) {
+                return;
             }
+            
+            // 由于我们已经检查了currentRecipe是否存在，可以安全地使用非空断言
+            const requestData = {
+                recipeID: this.currentRecipe.recipeID,
+                title: this.currentRecipe.title!,
+                imgUrl: this.currentRecipe.imgUrl!,
+                content: this.currentRecipe.content!,
+            };
+            
             console.log(requestData);
-            axios.put('http://localhost:8080/api/MealPlans/UpdateRecipe', requestData)
+            mealPlanApi.updateRecipe(requestData)
                 .then(response => {
-                    console.log(response.data.message);
+                    console.log(response.data.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.message,
+                        message: response.data.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                })
+                });
         },
         // 删除食物
-        deleteRecipe(recipeID) {
-            axios.delete('http://localhost:8080/api/MealPlans/DeleteRecipe', {
-                params: {
-                    recipeID: recipeID
-                }
-            })
+        deleteRecipe(recipeID: number) {
+            mealPlanApi.deleteRecipe(recipeID)
                 .then(response => {
-                    console.log(response.data.message);
+                    console.log(response.data.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.message,
+                        message: response.data.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                })
+                });
         }
     },
     created() {//加载时触发
         this.getRecipeFromDB();
     }
-}
+});
 </script>
 
 <style>

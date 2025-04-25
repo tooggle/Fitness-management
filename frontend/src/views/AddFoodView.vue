@@ -18,11 +18,13 @@
 import { defineComponent } from 'vue';
 import AddFood from '../components/AddFood.vue';
 import AddDiet from '../components/AddDiet.vue';
+import NavigationBar from '../components/NavigationBar.vue';
 
 export default defineComponent({
     components: {
         AddFood,
-        AddDiet
+        AddDiet,
+        NavigationBar
     }
 });
 </script>

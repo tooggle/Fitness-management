@@ -178,19 +178,24 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, ref, onMounted, watch } from 'vue';
 import { ElNotification } from 'element-plus';
-
-/*import diet1 from '@/assets/diet1.jpg';
-import diet2 from '@/assets/diet2.jpg';
-import diet3 from '@/assets/diet3.jpg';*/
-import axios from 'axios';
+import { mealPlanApi } from "../api/services";
+import { MealPlan, Food } from "../types/api";
+import { CoffeeCup, Food as FoodIcon, DishDot } from '@element-plus/icons-vue';
+import { marked } from 'marked';
 
 export default defineComponent({
+    name: 'MealPlanner',
+    components: {
+        CoffeeCup,
+        Food: FoodIcon,
+        DishDot
+    },
     data() {
         return {
             inputValue: '',
-            dynamicTags: [],
+            dynamicTags: [] as string[],
             inputVisible: false,
             calendarRef: null,
             value: new Date(),
@@ -199,26 +204,40 @@ export default defineComponent({
             currentFormData: {
                 userID: 0,
                 foodPlanID: -1,
-                mealType: -1,
-                date: '',
-                foods: [],
+                mealType: 0,
+                date: new Date(),
+                foods: [] as Food[],
                 state: false,
                 numOfTypes: 0
-            },
-            formDataStore: {},
+            } as MealPlan,
+            formDataStore: {} as Record<string, MealPlan[]>,
             food: [
-                { value: 'Apple', label: 'Apple' },
-                { value: 'Banana', label: 'Banana' },
-                { value: 'Orange', label: 'Orange' },
+                { value: '燕麦', label: '燕麦' },
+                { value: '牛奶', label: '牛奶' },
+                { value: '鱼', label: '鱼' },
             ],
             canAdd: true,
             MealType: ['早餐', '午餐', '晚餐'],
-            Complete: ['&#9744', '&#9745'],
-            tagQuantities: {},
-            selectedFoods: [],
-            recipes: [ ],
+            Complete: ['○', '●'],
+            tagQuantities: {} as Record<string, number>,
+            selectedFoods: [] as string[],
+            recipes: [
+                {
+                    id: 1,
+                    title: '健康早餐',
+                    time: '10分钟',
+                    imgUrl: 'https://example.com/breakfast.jpg',
+                    description: '这是一个健康的早餐食谱...'
+                },
+                // ... 其他食谱
+            ],
             showDietContext: false,
-            selectItem: {},
+            selectedItem: {
+                title: '',
+                time: '',
+                imgUrl: '',
+                description: ''
+            }
         };
     },
     methods: {
@@ -230,16 +249,7 @@ export default defineComponent({
         },
         // 根据种类设定标签颜色
         getMealTypeClass(mealType) {
-            switch (mealType) {
-                case 0:
-                    return 'breakfast';
-                case 1:
-                    return 'lunch';
-                case 2:
-                    return 'dinner';
-                default:
-                    return '';
-            }
+            return `meal-type-${mealType}`;
         },
         // 删除标签：添加时
         handleClose(tag) {
@@ -469,7 +479,7 @@ export default defineComponent({
         },
         // 增加换行符
         formattedDescription() {
-            return this.selectedItem.content.replace(/\n/g, '<br>');
+            return marked(this.selectedItem.description);
         },
         showDiet(item) {
             this.selectedItem = item;
@@ -479,21 +489,17 @@ export default defineComponent({
         // 创建计划函数
         sendPlanToDB() {
             const requestData = {
-                //userID: this.currentFormData.userID,
-                date: this.currentFormData.date,  // 确保日期格式正确
+                date: this.currentFormData.date,
                 mealType: this.currentFormData.mealType,
                 state: this.currentFormData.state,
                 foods: this.currentFormData.foods.map(food => ({
                     foodName: food.foodName,
-                    quantity: food.quantity  // 确保每个食物对象包含 quantity 字段
+                    quantity: food.quantity
                 }))
             };
-            //console.log("发送", requestData);
-            const token = localStorage.getItem('token');
-            axios.post(`http://localhost:8080/api/MealPlans/Create?token=${token}`, requestData)
+            mealPlanApi.create(requestData)
                 .then(response => {
                     console.log(response.data.message);
-                    // 显示通知
                     ElNotification({
                         message: response.data.message,
                         type: 'success',
@@ -517,8 +523,7 @@ export default defineComponent({
 
         // 得到食物函数
         getFoodFromDB() {
-            //const token = localStorage.getItem('token');
-            axios.get(`http://localhost:8080/api/MealPlans/GetFoodsInfo`)
+            mealPlanApi.getFoodsInfo()
                 .then(response => {
                     console.log(response.data.foodsInfo);
                     this.food = response.data.foodsInfo.map(item => ({
@@ -529,8 +534,7 @@ export default defineComponent({
         },
         // 得到计划函数
         getPlanFromDB() {
-            const token = localStorage.getItem('token');
-            axios.get(`http://localhost:8080/api/MealPlans/GetAllDetails?token=${token}`)
+            mealPlanApi.getAllDetails()
                 .then(response => {
                     this.formDataStore = {};
                     response.data.plans.forEach(item => {
@@ -552,10 +556,8 @@ export default defineComponent({
                             userID: getUserID,
                             foodPlanID: getfoodPlanID,
                             mealType: item.mealType,
-                            date: new Date(item.date),
-                            foods: foods,
                             state: item.state,
-                            numOfTypes: item.numOfTypes
+                            foods: foods
                         });
                     });
                 })
@@ -567,11 +569,12 @@ export default defineComponent({
                 mealType: planContent.mealType,
                 foods: planContent.foods.map(food => ({
                     foodName: food.foodName,
-                    quantity: food.quantity  // 确保每个食物对象包含 quantity 字段
-                }))
+                    quantity: food.quantity
+                })),
+                state: planContent.state
             };
             console.log("更新", requestData);
-            axios.put(`http://localhost:8080/api/MealPlans/Update`, requestData)
+            mealPlanApi.update(requestData)
                 .then(response => {
                     console.log(response.data.message);
                     ElNotification({
@@ -583,14 +586,9 @@ export default defineComponent({
         },
         // 删除计划函数
         deletePlanInDB(foodPlanID) {
-            axios.delete(`http://localhost:8080/api/MealPlans/Delete`, {
-                params: {
-                    foodPlanID: foodPlanID
-                }
-            })
+            mealPlanApi.delete(foodPlanID)
                 .then(response => {
                     console.log(response.data.message);
-                    // 显示通知
                     ElNotification({
                         message: response.data.message,
                         type: 'success',
@@ -609,7 +607,7 @@ export default defineComponent({
                 state: state
             };
             console.log("更新", requestData);
-            axios.put(`http://localhost:8080/api/MealPlans/UpdateState`, requestData)
+            mealPlanApi.updateState(requestData)
                 .then(response => {
                     console.log(response.data.message);
                     if (state) {
@@ -637,19 +635,9 @@ export default defineComponent({
         },
         // 获取食谱函数
         getRecipeFromDB() {
-            axios.get(`http://localhost:8080/api/MealPlans/GetAllRecipes`)
+            mealPlanApi.getRecipes()
                 .then(response => {
-                    this.recipes = [];
-                    response.data.recipes.forEach(item => {
-                        const time = new Date(item.releaseTime);
-                        this.recipes.push({
-                            recipeID: item.recipeID,
-                            title: item.title,
-                            imgUrl: item.imgUrl,
-                            content: item.content,
-                            releaseTime: time
-                        });
-                    })
+                    this.recipes = response.data.recipes;
                 })
         },
     },
@@ -657,6 +645,11 @@ export default defineComponent({
         this.getFoodFromDB();
         this.getPlanFromDB();
         this.getRecipeFromDB();
+    },
+    watch: {
+        value(newDate: Date) {
+            this.getPlanFromDB();
+        }
     }
 })
 

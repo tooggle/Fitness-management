@@ -12,7 +12,13 @@
 
 <script>
 import { ref } from 'vue'
+import NavigationBar from '../components/NavigationBar.vue'
 
+export default {
+  components: {
+    NavigationBar
+  }
+}
 </script>
 
 <style scoped>

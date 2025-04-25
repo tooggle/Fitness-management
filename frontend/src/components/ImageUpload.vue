@@ -12,6 +12,7 @@
   <script>
   import {PictureFilled} from '@element-plus/icons-vue';
   import store from "../store/index.js";
+  import { messageApi } from "../api/services";
  
   export default {
     name: 'ImageUpload',
@@ -30,45 +31,36 @@
         this.hasChanged = !this.hasChanged;
         if (this.hasChanged) return;
 
-        const token = store.state.token; // 假设 token 存储在 Vuex 的 store 中,在测试的时候直接拿一个字符串
         try {
-          // 使用 FileReader 将图片文件转换为 Base64 格式
           const reader = new FileReader();
           reader.readAsDataURL(file.raw);
 
           reader.onload = async () => {
             const base64Image = reader.result;
-
-            // 获取当前时间
             const currentTime = new Date().toLocaleString();
-
-            // 创建前端渲染所需的图片URL
             const imageURL = URL.createObjectURL(file.raw);
 
-            // 构建消息对象并提交到 store
             const msg = {
               targetName: store.state.targetInfomation.name,
               targetId: store.state.targetInfomation.targetId,
               list: {
-                is_me: true, // 用来判断是聊天对象发送的消息还是我发送的消息
-                time: currentTime, // 发送信息的时间
-                message:imageURL ,
-                messageType: 'image', // 指定消息类型为图片
+                is_me: true,
+                time: currentTime,
+                message: imageURL,
+                messageType: 'image',
               }
             };
             store.commit('addMessage', msg);
 
-            // 构建请求体
             const messageData = {
               receiverID: store.state.targetInfomation.id,
               senderID: store.state.myInformation.id,
               time: currentTime,
-              messageType: 'image', // 指定消息类型为图片
-              content: base64Image, // 空字符串，因为图片是通过 `image` 字段发送的
+              messageType: 'image',
+              content: base64Image,
             };
 
-            // 发送 POST 请求到后端 API
-            const response = await axios.post(`http://localhost:8080/api/Message/SendMessage?token=${token}`, messageData);
+            const response = await messageApi.sendMessage(messageData);
             console.log('Message with image sent successfully:', response.data);
           };
 

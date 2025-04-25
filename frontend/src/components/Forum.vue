@@ -163,6 +163,7 @@ import { LikeOutlined, MessageOutlined, ShareAltOutlined, DeleteOutlined, Vertic
 import store from '../store/index.js';
 import { Search } from '@element-plus/icons-vue';
 import { commonMixin } from '../mixins/checkLoginState';
+import { postApi } from "../api/services";
 
 export default {
   mixins: [postMixin, commonMixin],
@@ -224,16 +225,8 @@ export default {
       return this.$store.state.role === 'admin';
     },
     deletePost(postID, userID) {
-      const token = localStorage.getItem('token');
-      axios.delete(`http://localhost:8080/api/Post/DeletePostByPostID`, {
-        params: {
-          token: token,
-          postID: postID,
-          postOwnerID: userID
-        }
-      })
+      postApi.deletePost(postID, userID)
           .then(response => {
-            console.log(response.data);
             if (response.data.message === '删除帖子成功') {
               ElNotification({
                 title: '成功',
@@ -265,15 +258,14 @@ export default {
     },
 
     fetchAllPosts() {
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/Post/GetAllPost?token=${token}`)
+      postApi.getAllPost()
           .then(response => {
             this.allPosts = response.data
-                .filter(post => post.isReported === 0) // 过滤掉被举报的帖子
+                .filter(post => post.isReported === 0)
                 .sort((a, b) => new Date(b.postTime) - new Date(a.postTime));
             this.filteredPosts = this.allPosts;
-            this.updateHotPosts(); // 更新热帖
-            this.updatePostsOrder(); // 更新帖子顺序
+            this.updateHotPosts();
+            this.updatePostsOrder();
           })
           .catch(error => {
             ElNotification({
@@ -284,8 +276,8 @@ export default {
           });
     },
 
-    getAllPosts(token) {
-      return axios.get(`http://localhost:8080/api/Post/GetAllPost?token=${token}`)
+    getAllPosts() {
+      return postApi.getAllPost()
           .then(response => {
             this.allPosts = response.data.sort((a, b) => new Date(b.postTime) - new Date(a.postTime));
             this.filteredPosts = this.allPosts;
@@ -305,26 +297,20 @@ export default {
     },
 
     putTop(postID) {
-      const token = localStorage.getItem('token');
       const postIndex = this.allPosts.findIndex(post => post.postID === postID);
       if (postIndex !== -1) {
         const post = this.allPosts[postIndex];
         if (!post.isPinned) {
-          // 调用置顶接口
-          axios.get('http://localhost:8080/api/Post/PinPost', {
-            params: { token, postID }
-          }).then(response => {
+          postApi.pinPost(postID)
+              .then(response => {
             if (response.data.message === '成功置顶') {
               post.isPinned = true;
-              this.updatePostsOrder(); // 重新排序
+                  this.updatePostsOrder();
               ElNotification({
                 title: '成功',
                 message: '帖子已置顶',
-
                 type: 'success',
-
               });
-
             }
           })
               .catch(error => {
@@ -335,14 +321,11 @@ export default {
                 });
               });
         } else {
-          // 调用取消置顶接口
-          axios.get('http://localhost:8080/api/Post/CanclePinPost', {
-            params: { token, postID }
-          })
+          postApi.cancelPinPost(postID)
               .then(response => {
                 if (response.data.message === '成功取消置顶') {
                   post.isPinned = false;
-                  this.updatePostsOrder(); // 重新排序
+                  this.updatePostsOrder();
                   ElNotification({
                     title: '成功',
                     message: '帖子已取消置顶',
@@ -398,15 +381,12 @@ export default {
         return;
       }
 
-      const token = this.$store.state.token;
-      const name = localStorage.getItem('name');
-
       if (this.newPost.title && this.newPost.content && this.newPost.category) {
         const cleanedContent = this.cleanHtml(this.newPost.content);
         const newPost = {
           postID: -1,
           userID: localStorage.getItem('userID'),
-          userName: name,
+          userName: localStorage.getItem('name'),
           postTitle: this.newPost.title,
           postContent: cleanedContent,
           postCategory: this.newPost.category,
@@ -417,7 +397,7 @@ export default {
           refrencepostID: -1,
           imgUrl: this.newPost.imgUrl === 'null' ? 'null' : this.newPost.imgUrl
         };
-        axios.post(`http://localhost:8080/api/Post/PublishPost?token=${token}`, newPost)
+        postApi.publishPost(newPost)
             .then(response => {
               console.log(newPost);
               newPost.postID = response.data.postID;

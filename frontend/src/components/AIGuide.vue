@@ -200,10 +200,6 @@
         <el-icon><Search /></el-icon>
       </template>
 
-      <!-- 后缀图标 -->
-      <template #suffix>
-        <el-icon @click="clearSearch"><Close /></el-icon>
-      </template>
     </el-input>
 
 
@@ -259,6 +255,7 @@ import MarkdownIt from 'markdown-it'
 import { ElNotification } from 'element-plus';
 const md = new MarkdownIt()
 import { Upload,ZoomIn,Delete,Camera,Picture,Clock  } from '@element-plus/icons-vue'
+import { aiGuideApi, userApi } from "../api/services";
 
 export default {
   name: 'FitnessGuide',
@@ -430,15 +427,13 @@ export default {
         return
       }
       console.log('开始分析')
-      const token = localStorage.getItem('token');
       const requestData = {
         exerciseName: this.screenshotsCurrent.exerciseName,
         screenshotUrl: this.screenshotsCurrent.screenshotUrl
       }
-      // 生成随机的更新间隔，例如1到5秒之间
       let randomTimeout = Math.floor(Math.random() * 250) + 50
       this.refreshProgress(randomTimeout)
-      axios.post(`http://localhost:8080/api/AIGuide/Create?token=${token}`, requestData)
+      aiGuideApi.create(requestData)
         .then(response => {
           this.screenshotsCurrent.screenshotID = response.data.screenshotID
           this.screenshotsCurrent.createTime = new Date(response.data.createTime)
@@ -449,40 +444,11 @@ export default {
           console.error('创建失败：', error)
         })
     },
-    // getAISuggestions(screenshotID) {
-    //   console.log('获取AI建议:', screenshotID)
-    //   axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
-    //     params: {
-    //       screenshotID: screenshotID
-    //     }
-    //   })
-    //     .then(response => {
-    //       this.markdownText = response.data.message
-    //       this.analysisPercentage = 100
-    //       this.successAnalyze = true
-    //       this.analysisStatue = 0
-    //       console.log('AI建议:', response.data)
-    //       this.screenshotsCurrent.AIsuggestion = response.data.message
-    //       const screenshot = {
-    //         exerciseName: this.screenshotsCurrent.exerciseName,
-    //         screenshotID: this.screenshotsCurrent.screenshotID,
-    //         screenshotUrl: this.screenshotsCurrent.screenshotUrl,
-    //         AIsuggestion: this.screenshotsCurrent.AIsuggestion,
-    //         createTime: this.screenshotsCurrent.createTime
-    //       }
-    //       console.log('imgUrl:', this.screenshotsCurrent.screenshotUrl)
-    //       this.uploadedScreenshots.push(screenshot)
-    //       this.getVigorTokenBalance()
-    //     })
-    //     .catch(error => {
-    //       console.error('Error getting AI suggestions:', error)
-    //     })
-    // },
     getAISuggestions(screenshotID) {
       console.log('获取AI建议:', screenshotID);
       let attempts = 0;
       const maxAttempts = 15;
-      const interval = 1000; // 1秒
+      const interval = 1000;
 
       const poll = () => {
         if (attempts >= maxAttempts) {
@@ -490,11 +456,7 @@ export default {
           return;
         }
 
-        axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
-          params: {
-            screenshotID: screenshotID
-          }
-        })
+        aiGuideApi.getAISuggestion(screenshotID)
           .then(response => {
             if (response.data.message !== "") {
               console.log('AI建议:', response.data.message)
@@ -515,7 +477,7 @@ export default {
               this.uploadedScreenshots.push(screenshot);
               this.getVigorTokenBalance();
               this.screenshotsCurrent.exerciseName = "";
-              clearInterval(pollingInterval); // 停止轮询
+              clearInterval(pollingInterval);
             } else {
               attempts++;
             }
@@ -529,8 +491,7 @@ export default {
       const pollingInterval = setInterval(poll, interval);
     },
     getScreenshotFromDB() {
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/AIGuide/GetAllDetails?token=${token}`)
+      aiGuideApi.getAllDetails()
         .then(response => {
           console.log(response.data.suggestions)
           response.data.suggestions.forEach(item => {
@@ -546,16 +507,9 @@ export default {
         })
     },
     deleteScreenshot(screenshot) {
-      // 查找并删除匹配项
-      axios.delete(`http://localhost:8080/api/AIGuide/Delete`, {
-        params: {
-          screenshotID: screenshot.screenshotID
-        }
-      })
+      aiGuideApi.delete(screenshot.screenshotID)
         .then(response => {
           console.log(response.data.message)
-
-          // 从列表中移除该项
           this.uploadedScreenshots = this.uploadedScreenshots.filter(item => item !== screenshot)
           ElNotification({
           title: '提示',
@@ -573,11 +527,7 @@ export default {
     },
     // 获取活力币余额
     getVigorTokenBalance() {
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/User/GetVigorTokenBalance?token=${token}`,
-          {params:{
-            userID:-1
-            }})
+      userApi.getVigorTokenBalance()
         .then(response => {
           this.vigorTokenBalance = response.data.balance;
           })
@@ -735,244 +685,362 @@ export default {
 <style scoped>
 .title {
   font-size: 3vw;
-  color: #5485c2;
+  color: #3498db;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+  margin-bottom: 20px;
+  font-weight: bold;
 }
 
 .title span {
   letter-spacing: 1vw;
 }
 
-
 .container {
-  background: url("../assets/images/bg5.jpg") no-repeat center;
+  background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("../assets/images/bg5.jpg") no-repeat center;
   background-size: cover;
   width: 100vw;
-  margin-top: 3%; /* 上下5%的间距，水平居中 */
+  margin-top: 3%;
   height: 85vh;
-
+  position: relative;
+  overflow-y: auto;
 }
 
+.steps {
+  margin-bottom: 30px;
+}
+
+:deep(.el-step__title) {
+  color: #f8f8f8 !important;
+}
+
+:deep(.el-step__head.is-process) {
+  color: #3498db !important;
+  border-color: #3498db !important;
+}
+
+:deep(.el-step__head.is-finish) {
+  color: #2ecc71 !important;
+  border-color: #2ecc71 !important;
+}
+
+:deep(.el-step__line) {
+  background-color: rgba(255,255,255,0.5) !important;
+}
 
 .img-cap {
   border: none;
-  background-color: rgba(0, 0, 0, 0);
+  background-color: transparent;
   font-size: 2.3vh;
-  color: rgb(90, 141, 251);
+  color: #3498db;
+  transition: all 0.3s;
 }
 
 .img-cap:hover {
   font-weight: bold;
-  color: rgb(73, 108, 214);
+  color: #2980b9;
+  transform: scale(1.05);
 }
 
 .img-cap-dialog {
-  background-color: rgba(0, 0, 0, .6);
-  position: absolute;
+  background-color: rgba(0, 0, 0, .8);
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100vh;
   z-index: 1000;
-  float: top;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .img-cap-dialog-content {
-  margin: 5vh auto;
   width: 80%;
-  height: 94vh;
-  background-color: rgba(255, 255, 255, .8);
-  border-radius: 25px;
-  padding: 8vh 3%;
+  height: 90vh;
+  background-color: rgba(255, 255, 255, .9);
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
 .img-cap-dialog-content-title {
-  font-size: 3.5vh;
+  font-size: 28px;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: bold;
+  position: relative;
+}
+
+.img-cap-dialog-content-title:after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 100px;
+  height: 3px;
+  background-color: #3498db;
 }
 
 .before-open-camara .info-form {
-  margin: 10vh 15vw;
+  margin: 40px auto;
+  max-width: 500px;
 }
 
-.before-open-camara .info-form>>>.el-form-item {
-  margin: 5vh 5vw;
+.before-open-camara .info-form :deep(.el-form-item) {
+  margin: 20px 0;
 }
 
-.before-open-camara .info-form>>>.el-form-item__label {
-  font-size: 2.3vh;
-}
-
-.before-open-camara .info-form>>>.el-form-item__content {
-  text-align: left;
-}
-
-.before-open-camara .info-form>>>.el-form-item {
-  margin-bottom: 0;
+.before-open-camara .info-form :deep(.el-form-item__label) {
+  font-size: 18px;
+  color: #2c3e50;
 }
 
 .before-open-camara .setting-btn {
-  width: 25%;
-  margin: 3vh 2vw;
-  font-size: 2vh;
-  line-height: 3vh;
+  padding: 10px 20px;
+  margin: 10px;
+  font-size: 16px;
+  border-radius: 30px;
+  background: #3498db;
+  border-color: #3498db;
+  transition: all 0.3s;
+}
+
+.before-open-camara .setting-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .media-container {
-  margin: 5vh auto;
-  width: 75vw;
-  height: 60vh;
-  border-radius: 25px;
-  background-color: rgba(62, 61, 61, 0.2);
+  margin: 20px auto;
+  width: 80%;
+  height: 55vh;
+  border-radius: 15px;
+  background-color: rgba(44, 62, 80, 0.1);
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .cap-img {
   width: 100%;
   height: 100%;
-  border-radius: 25px;
+  border-radius: 15px;
+  object-fit: contain;
 }
 
 .after-open-camara .setting-btn {
-  width: 20%;
+  padding: 10px 15px;
+  margin: 10px;
+  font-size: 16px;
+  border-radius: 30px;
+  background: #3498db;
+  border-color: #3498db;
+  transition: all 0.3s;
+}
+
+.after-open-camara .setting-btn:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.setting-btn-group {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 20px;
 }
 
 .actions {
   position: absolute;
-  border-radius: 25px;
+  border-radius: 15px;
   width: 100%;
   height: 100%;
-  line-height: 50vh;
   left: 0;
   top: 0;
   cursor: default;
   text-align: center;
   color: #fff;
   opacity: 0;
-  font-size: 40px;
-  background-color: rgba(0, 0, 0, .5);
-  transition: opacity .3s;
+  background-color: rgba(0, 0, 0, .6);
+  transition: all 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .actions:hover {
   opacity: 1;
 }
 
-.actions:hover span {
-  display: inline-block;
+.actions .item {
+  margin: 0 15px;
+  cursor: pointer;
+  font-size: 30px;
+  background-color: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
 }
 
-.actions span {
-  display: none;
-  margin: 0 10%;
-  cursor: pointer;
-  font-size: 6vh;
+.actions .item:hover {
+  background-color: rgba(255,255,255,0.4);
+  transform: scale(1.1);
+}
+
+:deep(.uploader .el-upload-dragger) {
+  width: 100%;
+  height: 45vh;
+  border-radius: 15px;
+  border: 2px dashed rgba(255,255,255,0.5);
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: all 0.3s;
+}
+
+:deep(.uploader .el-upload-dragger:hover) {
+  border-color: #3498db;
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
 .uploader-icon {
-  font-size: 15px ;
-  color: #8c8c8c;
+  font-size: 50px !important;
+  color: #ecf0f1;
+  margin-bottom: 15px;
+  transition: all 0.5s;
+}
+
+:deep(.uploader:hover .uploader-icon) {
+  color: #3498db;
+  transform: scale(1.2);
 }
 
 .uploader-text {
-  margin-top: 5px !important;
-  font-size: 35px !important;
-  color: #8c8c8c;
+  margin-top: 15px !important;
+  font-size: 24px !important;
+  color: #ecf0f1;
 }
 
 .title-container {
   display: flex;
   justify-content: center;
-  /* 水平居中 */
   align-items: center;
-  /* 垂直居中 */
   width: 100%;
-  margin-left: -3%;
 }
 
 .screenshot-gallery {
-  margin-top: 20px;
-  width: 80%;
-  margin-left: 10%;
+  margin-top: 30px;
+  width: 90%;
+  margin-left: 5%;
+}
+
+:deep(.el-card) {
+  border-radius: 15px;
+  overflow: hidden;
+  transition: all 0.3s;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+  background-color: rgba(255,255,255,0.85) !important;
+}
+
+:deep(.el-card:hover) {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
 }
 
 .uploaded-image {
   width: 100%;
   height: auto;
-  display: block;
-  margin-bottom: 20px;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 8px;
   transition: transform 0.3s ease-in-out;
 }
 
 .uploaded-image:hover {
-  transform: scale(1.1);
+  transform: scale(1.03);
 }
 
-/* 自定义模态窗口背景颜色 */
-.el-dialog__wrapper {
-  background-color: rgba(0, 0, 0, 0.8);
-  /* 设置背景颜色更深 */
+:deep(.el-dialog) {
+  border-radius: 15px;
+  overflow: hidden;
+  background-color: rgba(255,255,255,0.95);
+}
+
+:deep(.el-dialog__header) {
+  background-color: #3498db;
+  padding: 15px 20px;
+}
+
+:deep(.el-dialog__title) {
+  color: white;
+  font-weight: bold;
+}
+
+:deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white;
 }
 
 .dialog-image {
   width: 100%;
   max-width: 50%;
+  border-radius: 8px;
   display: block;
   margin: 0 auto;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .info {
-  color: black;
-  font-size: 1.5em;
+  color: #34495e;
+  font-size: 18px;
+  margin: 10px 0;
 }
 
-.el-dialog__body p,
-.el-dialog__body div {
-  color: black;
-  font-size: 1.5em;
+:deep(.el-dialog__body p),
+:deep(.el-dialog__body div) {
+  color: #34495e;
+  font-size: 16px;
 }
 
 .markdown-content-container {
   max-height: 40vh;
   min-height: 40vh;
-  /* 设置容器的最大高度 */
   overflow-y: auto;
-  /* 启用垂直滚动条 */
-  padding: 5px;
-  /* 添加一些内边距 */
+  padding: 15px;
   border: 1px solid #e0e0e0;
-  /* 添加边框以区分区域 */
-  margin-bottom: 5px;
-  /* 确保与按钮有一定间距 */
-  margin-top:5px
+  border-radius: 8px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+  background-color: #f9f9f9;
 }
 
 .markdown-content-container-sub {
   max-height: 200px;
-  /* 设置容器的最大高度 */
   overflow-y: auto;
-  /* 启用垂直滚动条 */
-  padding-left: 5%;
-  /* 添加一些内边距 */
-  padding-right: 5%;
+  padding: 15px;
   text-align: left;
-  font-size: 1em !important;
+  font-size: 16px !important;
+  background-color: #f9f9f9;
+  border-radius: 8px;
 }
 
 .markdown-content {
-  color: black;
-  font-size: 1.5em !important;
+  color: #2c3e50;
+  font-size: 18px !important;
   text-align: left;
-  /* 确保文本左对齐 */
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   margin-left: 5%;
-
 }
 
 .markdown-content-res {
-  color: black;
-  font-size: 1em !important;
+  color: #2c3e50;
+  font-size: 16px !important;
   text-align: left;
-  /* 确保文本左对齐 */
   margin-bottom: 10px;
-  margin-left: 5%;
+  line-height: 1.6;
 }
 
 .divider {
@@ -980,13 +1048,6 @@ export default {
   height: 1px;
   background: #e0e0e0;
   margin: 20px 0;
-}
-
-.dialog-image {
-  width: 100%;
-  max-width: 40%;
-  display: block;
-  margin: 0 auto;
 }
 
 .search-input {
@@ -999,212 +1060,237 @@ export default {
 }
 
 
-.type-form
-{
+
+.type-form {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 30px 0;
+}
+
+:deep(.type-form .el-input) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.type-form .el-input__inner) {
+  height: 45px;
+  font-size: 18px;
+  border: 1px solid #dcdfe6;
+  box-shadow: none;
 }
 
 .content {
   margin: 1.5% auto;
-  width: 85%;
-  background-color: rgba(140, 139, 139, 0.604);
-  border-radius: 25px;
-  padding: 2.5%;
-
+  width: 90%;
+  background-color: rgba(52, 73, 94, 0.7);
+  border-radius: 15px;
+  padding: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  backdrop-filter: blur(10px);
 }
 
 .before-tracking,
 .after-tracking {
   display: flex;
+  flex-wrap: wrap;
 }
 
 .content-left {
-  width: 45.3vw;
-  height: 49vh;
+  width: 45%;
+  height: 450px;
   margin-top: 2%;
-  border-radius: 25px;
-  background-color: rgba(222, 221, 221, 0.292);
+  border-radius: 15px;
+  background-color: rgba(236, 240, 241, 0.1);
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .content-right {
   margin-left: 2%;
-  width: 48.2vw;
-  position: relative;
-}
-
-.uploader >>> .el-upload-dragger {
-  width: 100%;
-  height: 50vh;
-  border-radius: 25px;
-  border: none;
-  background-color: rgba(255, 255, 255, 0);
-}
-
-.uploader .uploader-icon {
-  margin-top: 2%;
-  font-size: 15vh !important ;
-  color: #181818;
-  transition: all .8s;
-}
-
-.uploader:hover .uploader-icon {
-  font-size: 20vh !important;
-  transition: all .8s;
-}
-
-.uploader .uploader-text {
-  margin-top: 4%;
-  font-size: 5vh;
-  color: #181818;
-}
-
-.upload-title {
-    font-size: 30px !important;
-  font-weight: bold !important; /* 也可以使用数值如 600 或 700 */
-}
-
-.custom-label {
-  font-size: 333px !important;
-}
-.type-form .el-form-item__label {
-  font-size: 18px !important;
-}
-
-
-.content-left .after-upload,
-.content-left .after-success-tracking {
-  height: 100%;
-  width: 100%;
+  width: 50%;
   position: relative;
 }
 
 .upload-img {
   height: 100%;
   width: 100%;
-  border-radius: 25px;
+  border-radius: 15px;
   object-fit: contain;
 }
 
-.before-tracking .content-right .card {
-  position: absolute;
+:deep(.before-tracking .content-right .card) {
   width: 100%;
-  bottom: 0;
-  height: 49vh;
-  border-radius: 25px;
-  background-color: rgba(255, 255, 255, .6);
+  height: 450px;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
 }
 
-.content-right .card >>>.el-card__header {
-  border-bottom: 2px solid #9d9d9d;
-  font-size: 2.5vh;
+:deep(.content-right .card .el-card__header) {
+  border-bottom: 2px solid #e0e0e0;
+  font-size: 20px;
+  padding: 15px 20px;
+  background-color: #3498db;
+  color: white;
 }
 
-.after-tracking .content-right .card {
+:deep(.after-tracking .content-right .card) {
   width: 100%;
-  bottom: 0;
-  height: 60vh;
-  border-radius: 25px;
-  background-color: rgba(255, 255, 255, .6);
+  height: 500px;
+  border-radius: 15px;
+  background-color: rgba(255, 255, 255, 0.85) !important;
 }
 
 .card .step1_before_upload .loading-icon {
-  font-size: 5vh;
-  margin-top: 10vh;
+  font-size: 40px;
+  margin: 40px 0;
+  color: #3498db;
 }
 
 .card .step1_before_upload p {
-  margin-top: 6vh;
-  font-size: 2.3vh;
+  margin: 20px 0;
+  font-size: 18px;
+  color: #34495e;
+}
+
+:deep(.el-icon-camera-solid) {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+:deep(.el-icon-camera-solid:hover) {
+  color: #3498db;
+  transform: scale(1.2);
 }
 
 .card .step1_after_upload {
-  font-size: 2.3vh;
+  font-size: 18px;
 }
 
 .card .step1_after_upload .img-info-item {
   text-align: left;
-  margin: 3vh 2vw;
-}
-
-.card .step1_after_upload .img-info-step1_2 {
-  margin: 4vh 0;
+  margin: 15px;
+  color: #34495e;
 }
 
 .img-button {
-  width: 40%;
-  font-size: 2vh;
-  line-height: 3vh;
+  padding: 10px 30px;
+  margin: 10px;
+  font-size: 16px;
+  border-radius: 30px;
+  background: #3498db;
+  border-color: #3498db;
+  transition: all 0.3s;
 }
 
-.card .type-form {
-  margin: 4vh 3vw;
-}
-
-.card .type-form p {
-  margin: 2.5vh 0 1.5vh 0;
-  font-size: 2vh;
+.img-button:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .card .img-tip-step2 {
-  margin: 4vh 0;
-  font-size: 2.3vh;
+  margin: 30px 0;
+  font-size: 18px;
+  color: #34495e;
 }
 
 .card .step3,
 .card .after-success-tracking {
-  font-size: 2.3vh;
+  font-size: 16px;
 }
 
 .card .step3 .img-info-item,
 .card .after-success-tracking .img-info-item {
   text-align: left;
-  margin: 2vh 3vw;
+  margin: 15px;
+  color: #34495e;
+  background-color: rgba(236, 240, 241, 0.5);
+  padding: 10px 15px;
+  border-radius: 8px;
 }
 
 .card .img-info-step3 {
-  margin: 3vh 0;
-  font-size: 2.3vh;
+  margin: 25px 0;
+  font-size: 18px;
+  color: #34495e;
 }
 
-.after-tracking .content-left .before-success-tracking {
-  font-size: 8vh;
-  line-height: 60vh;
+:deep(.el-tag) {
+  font-size: 16px;
+  padding: 8px 16px;
+  border-radius: 20px;
 }
 
-.after-tracking .content-right .tag {
-  width: 10vw;
-  height: 5vh;
-  line-height: 5vh;
-  font-size: 2.5vh;
-}
-
-.after-tracking .content-right .progress {
-  margin: 4% 0 2% 0;
+:deep(.el-progress-circle) {
+  margin: 20px 0;
 }
 
 .after-tracking .content-right .cancel-btn {
-  margin: 2vh auto;
-  width: 40%;
-  font-size: 2vh;
-  line-height: 3vh;
+  margin: 20px auto;
+  padding: 10px 30px;
+  font-size: 16px;
+  border-radius: 30px;
+  background: #e74c3c;
+  border-color: #e74c3c;
+  transition: all 0.3s;
+}
+
+.after-tracking .content-right .cancel-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .after-tracking .content-right .after-success-tracking .img-info-finish {
-  margin: 7vh 2vw;
-  width: 15vw;
-  font-size: 2vh;
-  line-height: 3vh;
+  margin: 25px auto;
+  padding: 10px 25px;
+  font-size: 16px;
+  border-radius: 30px;
+  background: #3498db;
+  border-color: #3498db;
+  display: block;
+  transition: all 0.3s;
+}
+
+.after-tracking .content-right .after-success-tracking .img-info-finish:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
 .dialog {
-  max-width: 80vw; /* 设置对话框最大宽度为视窗宽度的80% */
+  max-width: 80vw;
 }
 
 .dialog-img {
-  max-width: 100%; /* 让图片宽度不超过对话框宽度 */
-  height: auto;    /* 保持图片的纵横比 */
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
 }
 
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .content-left, .content-right {
+    width: 100%;
+    margin-left: 0;
+    margin-bottom: 20px;
+  }
+  
+  .before-tracking, .after-tracking {
+    flex-direction: column;
+  }
+  
+  .search-input {
+    width: 80%;
+    margin-left: 0;
+  }
+}
+
+:deep(.upload-title) {
+  font-size: 24px !important;
+  font-weight: bold !important;
+  color: white !important;
+}
 </style>

@@ -21,10 +21,15 @@ import {ElNotification} from "element-plus";
 import {useRouter} from "vue-router";
 import axios from "axios";
 import { commonMixin } from '../mixins/checkLoginState';
+import NavigationBar from '../components/NavigationBar.vue';
+import CommonLayout from '../components/CommonLayout.vue';
+
 export default {
   mixins: [commonMixin],
   components: {
-    MealRecord
+    MealRecord,
+    NavigationBar,
+    CommonLayout
   },
   methods: {
     goBack() {
@@ -34,7 +39,6 @@ export default {
   created() {
     this.checkAvailable()
   }
-
 }
 </script>
 

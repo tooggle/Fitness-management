@@ -23,8 +23,9 @@
 <script>
 import Achievements from "../components/Achievements.vue";
 import CommonLayout from "../components/CommonLayout.vue";
+import NavigationBar from '../components/NavigationBar.vue';
 
 export default {
-    components: {  Achievements,CommonLayout },
+    components: { Achievements, CommonLayout, NavigationBar },
 }
 </script>

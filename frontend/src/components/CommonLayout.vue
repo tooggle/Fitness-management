@@ -51,6 +51,7 @@ import * as signalR from '@microsoft/signalr';
 import ImageUpload from '../components/ImageUpload.vue';
 import { EmojiButton } from '@joeattardi/emoji-button';
 import { ElNotification } from 'element-plus';
+import { userApi } from "../api/services";
 
 
 export default {
@@ -263,23 +264,16 @@ export default {
     },
     async getFriendInformation() {
       try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`http://localhost:8080/api/User/GetFriendList?token=${token}`);
-        const userList = response.data;  // 获取 userList
-        const userListInformation = []; // 用于存储用户详细信息
+        const response = await userApi.getFriendList();
+        const userList = response.data;
+        const userListInformation = [];
         for (const user of userList) {
-          const response = await axios.get('http://localhost:8080/api/User/GetProfileByUserID', {
-            params: {
-              token: token, // 将 Token 作为查询参数 
-              userID: user //用户ID   
-            }
-          });
+          const response = await userApi.getProfileByUserID(user);
           const userInfo = response.data;
-          // 构建新的用户信息对象
           const userInformation = {
             id: userInfo.userID,
             name: userInfo.userName,
-            img: userInfo.iconURL, // 使用返回的 iconURL 或原始 img
+            img: userInfo.iconURL,
             age: userInfo.age,
             gender: userInfo.gender,
             tags: userInfo.tags,
@@ -287,14 +281,11 @@ export default {
             goalType: userInfo.goalType,
             goalWeight: userInfo.goalWeight
           };
-          // 将用户信息推入 userListInformation 数组
           userListInformation.push(userInformation);
         }
-        // 将新的用户详细信息列表提交到 Vuex store
         store.commit('setUserListInformation', userListInformation);
         store.commit('setUserList', userList);
         console.log('Updated User List Information:', store.state.userListInformation);
-        //this.getChatHistory();
       } catch (error) {
         console.error('Error fetching user information:', error);
       }
@@ -302,30 +293,20 @@ export default {
 
     async getChatHistory() {
       try {
-        //console.log("1",userList);
         const userList = localStorage.getItem('userList');
-        //console.log("2",userList);
-        const token = localStorage.getItem('token');
-        //console.log("3",token);
-
         for (const user of userList) {
-          const response = await axios.get(`http://localhost:8080/api/Message/GetChatHistory?userID=${user}`);
-
-          // 获取返回的数据
+          const response = await userApi.getChatHistory(user);
           const data = response.data;
-
           const userListInformation = localStorage.getItem('userListInformation');
-          // 遍历每条消息
           data.forEach(message => {
-            // 根据 messageType 判断并处理消息
-            if (message.senderID === user) { //发送方是好友
+            if (message.senderID === user) {
               var target_user = userListInformation.find(user => user.id === message.senderID);
               var msg = {
                 targetName: target_user.name,
                 targetId: target_user.id,
                 list: {
-                  is_me: false,//用来判断是聊天对象发送的消息还是我发送的消息
-                  time: message.sendTime,//发送信息的时间
+                  is_me: false,
+                  time: message.sendTime,
                   message: message.content,
                   messageType: message.messageType,
                 }
@@ -337,8 +318,8 @@ export default {
                 targetName: target_user.name,
                 targetId: target_user.id,
                 list: {
-                  is_me: true,//用来判断是聊天对象发送的消息还是我发送的消息
-                  time: message.sendTime,//发送信息的时间
+                  is_me: true,
+                  time: message.sendTime,
                   message: message.content,
                   messageType: message.messageType,
                 }
@@ -346,11 +327,9 @@ export default {
               store.commit('addMessage', msg);
             }
           });
-          // 打印处理后的聊天记录
           console.log('Chat History:', data);
         }
       } catch (error) {
-        // 处理请求错误
         console.error('Error fetching chat history:', error);
       }
     }

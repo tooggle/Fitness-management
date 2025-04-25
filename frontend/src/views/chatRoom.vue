@@ -4,12 +4,12 @@
 </template>
 
 <script>
-
 import {defineComponent} from "vue";
 import { RouterView } from 'vue-router';
 import CommonLayout from '../components/CommonLayout.vue';
-export default defineComponent({
-  components: { CommonLayout}
-})
+import NavigationBar from '../components/NavigationBar.vue';
 
+export default defineComponent({
+  components: { CommonLayout, NavigationBar }
+})
 </script>

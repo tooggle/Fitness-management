@@ -257,35 +257,46 @@ import axios from 'axios';
 import { marked } from 'marked';
 import { ElNotification } from 'element-plus';
 import anaBG from '../assets/images/anaBG.png';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, defineComponent, watch } from 'vue';
+import { mealRecordApi, userApi, mealPlanApi } from "../api/services";
+import { MealRecord, Food } from "../types/api";
+import { Upload, Edit, Delete, Plus, Sunny, Moon } from '@element-plus/icons-vue';
 
-export default {
+export default defineComponent({
   name: 'Record',
+  components: {
+    Upload,
+    Edit,
+    Delete,
+    Plus,
+    Sunny,
+    Moon
+  },
   data() {
     return {
       vigorTokenBalance: 0,
-      selectedDate: '', // 绑定到日期选择器的模型
+      selectedDate: new Date(),
       dialogVisible: false,
       modiVisible: false,
       imageUrl: '',
       currentRecord: {
         userID: 0,
         recordID: -1,
-        mealTime: '',
+        mealTime: new Date(),
         foods: [],
         mealPhoto: "",
         totalNumOfFoods: 0,
         totalCalorie: 0,
         loading: true,
         diningAdvice: '',
-      },
-      oneDayRecord: {},
+      } as MealRecord,
+      oneDayRecord: {} as Record<string, MealRecord[]>,
       canAdd: true,
       inputValue: '',
-      dynamicTags: [],
+      dynamicTags: [] as string[],
       inputVisible: false,
-      tagQuantities: {},
-      selectedFoods: [],
+      tagQuantities: {} as Record<string, number>,
+      selectedFoods: [] as string[],
       food: [
         { value: '燕麦', label: '燕麦' },
         { value: '牛奶', label: '牛奶' },
@@ -323,6 +334,12 @@ export default {
       AIanalysis: ""
     };
   },
+  computed: {
+    recordsForSelectedDate(): MealRecord[] {
+      const formattedDate = this.formatDate(this.selectedDate);
+      return this.oneDayRecord[formattedDate] || [];
+    }
+  },
   methods: {
     getAna() {
       const needToAna = this.formatDate(this.selectedDate);
@@ -353,7 +370,7 @@ export default {
           })
         }
         this.anaLoading = true;
-        this.getAIAnalysis(/*this.oneDayRecord[needToAna][0].userID*/);
+        this.getAIAnalysis();
       }
     },
     countCarlorie() {
@@ -364,11 +381,11 @@ export default {
       }
       return count;
     },
-    handleCellClick() {
+    handleCellClick(): void {
       this.currentRecord = {
         userID: 0,
         recordID: -1,
-        mealTime: '',
+        mealTime: new Date(),
         foods: [],
         mealPhoto: "",
         totalNumOfFoods: 0,
@@ -376,9 +393,7 @@ export default {
         loading: true,
         diningAdvice: '',
       };
-      // 清空imageUrl
       this.imageUrl = '';
-      // 清空食物部分
       this.dynamicTags = [];
       this.tagQuantities = {};
       this.selectedFoods = [];
@@ -386,23 +401,20 @@ export default {
       this.selectedDate = new Date();
       this.dialogVisible = true;
     },
-    // 设定添加
-    showInput() {
+    showInput(): void {
       this.inputVisible = true;
     },
-    // 标签输入确定：添加时
-    handleInputConfirm() {
+    handleInputConfirm(): void {
       if (this.inputValue && this.currentRecord.totalNumOfFoods < 5) {
-        // 检查输入值是否在已存在的选项中，如果不存在则添加新选项
         const existingItem = this.food.find(item => item.value === this.inputValue);
         if (!existingItem) {
           this.food.push({ value: this.inputValue, label: this.inputValue });
         }
 
         this.currentRecord.totalNumOfFoods++;
-        this.dynamicTags.push(this.inputValue); // 动态添加标签
-        this.tagQuantities[this.inputValue] = 0; // 为每个标签设置初始数据：食物数量
-        this.selectedFoods.push(this.inputValue); // 设定选择食物
+        this.dynamicTags.push(this.inputValue);
+        this.tagQuantities[this.inputValue] = 0;
+        this.selectedFoods.push(this.inputValue);
 
         this.inputVisible = false;
         this.inputValue = '';
@@ -411,11 +423,9 @@ export default {
         }
       }
     },
-    // 删除标签：添加时
-    handleClose(tag) {
+    handleClose(tag: string): void {
       this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1);
       this.currentRecord.foods.splice(this.currentRecord.foods.indexOf(tag), 1);
-      // 删除标签
       if (this.tagQuantities.hasOwnProperty(tag)) {
         delete this.tagQuantities[tag];
       }
@@ -423,70 +433,61 @@ export default {
       if (this.currentRecord.totalNumOfFoods < 5) {
         this.canAdd = true;
       }
-      this.selectedFoods = this.selectedFoods.filter(food => food !== tag);//设定选择食物
-      console.log(this.tagQuantities);
+      this.selectedFoods = this.selectedFoods.filter(food => food !== tag);
     },
-    // 阻止添加
-    isOptionDisabled(value) {
+    isOptionDisabled(value: string): boolean {
       return this.selectedFoods.includes(value);
     },
-    // 图片上传处理
-    beforeAvatarUpload(file) {
+    beforeAvatarUpload(file: File): boolean {
       this.imageUrl = '';
       const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png';
       const isLt2M = file.size / 1024 / 1024 < 2;
 
       if (!isJPGorPNG) {
         ElNotification({
-                          title: '错误',
-                          message: '上传图片只能是 JPG 或 PNG 格式!',
-                          type: 'error',
-                      });
+          title: '错误',
+          message: '上传图片只能是 JPG 或 PNG 格式!',
+          type: 'error',
+        });
         return false;
       }
       if (!isLt2M) {
         ElNotification({
-                          title: '错误',
-                          message: '上传图片大小不能超过2MB!',
-                          type: 'error',
-                      });
+          title: '错误',
+          message: '上传图片大小不能超过2MB!',
+          type: 'error',
+        });
         return false;
       }
 
-      // 转换为Base64格式
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        this.imageUrl = reader.result; // 将Base64格式图片赋值给 imageUrl
+        this.imageUrl = reader.result as string;
         this.currentRecord.mealPhoto = this.imageUrl;
       };
-      return false; // 阻止默认的上传行为
+      return false;
     },
-    // 得到格式化日期
-    formatDate(date) {
+    formatDate(date: Date): string {
       if (!(date instanceof Date)) {
         return '';
       }
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`; // 格式化为 yyyy-mm-dd
+      return `${year}-${month}-${day}`;
     },
-    // 得到格式化时间
-    formatTime(date) {
+    formatTime(date: Date): string {
       const hours = date.getHours().toString().padStart(2, '0');
-      console.log(hours);
       return `${hours}`;
     },
-    // 保存记录
-    saveEvent() {
+    saveEvent(): void {
       if (this.currentRecord.mealPhoto) {
         const now = new Date();
-
         this.currentRecord.mealTime = now;
         const currentDay = this.formatDate(now);
         if (!this.oneDayRecord[currentDay]) {
-          this.oneDayRecord[currentDay] = []; // 初始化为一个空数组
+          this.oneDayRecord[currentDay] = [];
         }
         for (let i = 0; i < this.selectedFoods.length; i++) {
           if (this.tagQuantities[this.selectedFoods[i]] == 0) {
@@ -496,16 +497,13 @@ export default {
           const newFood = { foodName: this.selectedFoods[i], quantity: this.tagQuantities[this.selectedFoods[i]] };
           this.currentRecord.foods.push(newFood);
         }
-        // 发送创建
         this.oneDayRecord[currentDay].push(this.currentRecord);
         this.sendRecordToDB();
 
-        console.log("前端创建", this.oneDayRecord);
-        // 清空 currentRecord
         this.currentRecord = {
           userID: 0,
           recordID: -1,
-          mealTime: '',
+          mealTime: new Date(),
           foods: [],
           mealPhoto: "",
           totalNumOfFoods: 0,
@@ -513,15 +511,12 @@ export default {
           loading: true,
           diningAdvice: '',
         };
-        // 清空imageUrl
         this.imageUrl = '';
-        // 清空食物部分
         this.dynamicTags = [];
         this.tagQuantities = {};
         this.selectedFoods = [];
         this.dialogVisible = false;
-      }
-      else {
+      } else {
         ElNotification({
           title: '警告',
           message: '记录图片不可为空',
@@ -530,60 +525,45 @@ export default {
         });
       }
     },
-    // 删除当前记录
-    deleteRecord(record) {
-      // 找到对应时间
+    deleteRecord(record: MealRecord): void {
       const needToDelete = this.formatDate(this.selectedDate);
-      // 遍历查找匹配项并删除
       for (let i = 0; i < this.oneDayRecord[needToDelete].length; i++) {
-        if (record == this.oneDayRecord[needToDelete][i]) {// 找到相应的记录
-          console.log(record);
-          // 发送删除
-          this.deleteRecordInDB(/*record.userID,*/record.recordID);
-          // 使用 splice 方法删除匹配的元素
+        if (record === this.oneDayRecord[needToDelete][i]) {
+          this.deleteRecordInDB(record.recordID);
           this.oneDayRecord[needToDelete].splice(i, 1);
-          i--; // 因为删除后数组长度减少，需要将索引回退
+          i--;
           break;
         }
       }
-      // 删除完毕后，检查数组是否为空，若为空则删除整个日期数据
       if (this.oneDayRecord[needToDelete].length === 0) {
         delete this.oneDayRecord[needToDelete];
       }
     },
-    // 展示计划
-    showPlan(record) {
-      this.modiVisible = true; // 设置可见
-      this.currentRecord = record; // 修改当前record
-      console.log("Show plan:", this.currentRecord);
+    showPlan(record: MealRecord): void {
+      this.modiVisible = true;
+      this.currentRecord = record;
       this.tagQuantities = {};
       this.selectedFoods = [];
       for (let i = 0; i < this.currentRecord.totalNumOfFoods; i++) {
-        console.log("Show plan:", 1);
         this.tagQuantities[this.currentRecord.foods[i].foodName] = this.currentRecord.foods[i].quantity;
         this.selectedFoods.push(this.currentRecord.foods[i].foodName);
       }
-      console.log("Show plan:", this.tagQuantities);
     },
-    // 修改计划
-    saveModi() {
-      // 安全判断
-      if (this.currentRecord.mealPhoto != 0) {
-        // 找到对应时间
+    saveModi(): void {
+      if (this.currentRecord.mealPhoto) {
         const needToModi = this.formatDate(this.selectedDate);
         if (!this.oneDayRecord[needToModi]) {
           this.oneDayRecord[needToModi] = [];
         }
-        //必然存在
         let i = -1;
         for (i = 0; i < this.oneDayRecord[needToModi].length; i++) {
-          if (this.oneDayRecord[needToModi][i].recordID == this.currentRecord.recordID) {
+          if (this.oneDayRecord[needToModi][i].recordID === this.currentRecord.recordID) {
             break;
           }
         }
         this.currentRecord.foods = [];
         for (let i = 0; i < this.selectedFoods.length; i++) {
-          if (this.tagQuantities[this.selectedFoods[i]] == 0) { // 数量不可为0
+          if (this.tagQuantities[this.selectedFoods[i]] == 0) {
             this.currentRecord.foods = [];
             return;
           }
@@ -592,15 +572,12 @@ export default {
         }
         this.currentRecord.loading = true;
         this.oneDayRecord[needToModi][i] = this.currentRecord;
-        console.log(this.oneDayRecord);
-        // 发送更新
         this.updateRecordToDB(this.currentRecord);
         this.modiVisible = false;
-        // 清空 currentRecord
         this.currentRecord = {
           userID: 0,
           recordID: -1,
-          mealTime: '',
+          mealTime: new Date(),
           foods: [],
           mealPhoto: "",
           totalNumOfFoods: 0,
@@ -608,9 +585,7 @@ export default {
           loading: true,
           diningAdvice: '',
         };
-        // 清空imageUrl
         this.imageUrl = '';
-        // 清空食物部分
         this.dynamicTags = [];
         this.tagQuantities = {};
         this.selectedFoods = [];
@@ -618,23 +593,18 @@ export default {
       }
     },
     // 获取活力币余额
-    getVigorTokenBalance() {
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/User/GetVigorTokenBalance?token=${token}`,
-          {params:{
-            userID:-1
-            }})
+    getVigorTokenBalance(): void {
+      userApi.getVigorTokenBalance()
         .then(response => {
-          this.vigorTokenBalance = response.data.balance;
+          this.vigorTokenBalance = response.data.data.balance;
         }).catch(error => {
           this.vigorTokenBalance = 0;
           console.error("Error fetching vigorTokenBalance:", error);
         });
     },
     // 发送记录
-    sendRecordToDB() {
+    sendRecordToDB(): void {
       const requestData = {
-        //userID: this.currentRecord.userID,
         mealTime: this.currentRecord.mealTime,
         mealPhoto: this.currentRecord.mealPhoto,
         foods: this.currentRecord.foods.map(food => ({
@@ -642,8 +612,7 @@ export default {
           quantity: food.quantity
         }))
       };
-      const token = localStorage.getItem('token');
-      axios.post(`http://localhost:8080/api/MealRecords/Create?token=${token}`, requestData)
+      mealRecordApi.create(requestData)
         .then(response => {
           console.log("创建 ", requestData);
           console.log(response.data.message);
@@ -658,11 +627,9 @@ export default {
           }
           for (let i = 0; i < this.oneDayRecord[check].length; i++) {
             if (this.oneDayRecord[check][i].mealTime === requestData.mealTime) {
-              this.oneDayRecord[check][i].recordID = response.data.recordID;
-              this.oneDayRecord[check][i].totalCalorie = response.data.totalCalorie/100.0;
-              //setTimeout(() => {
+              this.oneDayRecord[check][i].recordID = response.data.data.recordID;
+              this.oneDayRecord[check][i].totalCalorie = response.data.data.totalCalorie/100.0;
               this.getAISuggestions(this.oneDayRecord[check][i].recordID);
-              //}, 10000);
               break;
             }
           }
@@ -671,33 +638,27 @@ export default {
           console.error("Error creating record:", error);
         });
     },
-    getAISuggestions(recordID) {
+    getAISuggestions(recordID: number): void {
       console.log("获取AI建议", recordID);
       const maxAttempts = 20;
 
-      // 这个函数每次调用都会创建一个独立的 attempts 变量
       const pollForAISuggestions = (attempts = 0) => {
         console.log("获取AI建议", recordID);
-        axios.get(`http://localhost:8080/api/MealRecords/AISuggestions`, {
-          params: {
-            recordID: recordID,
-          }
-        })
+        mealRecordApi.getAISuggestions(recordID)
           .then(response => {
             console.log("轮询尝试次数:", attempts, "AI建议:", response.data);
-            if (response.data && response.data.diningAdvice) {
-              console.log("AI建议:", response.data.diningAdvice);
+            if (response.data && response.data.data.diningAdvice) {
+              console.log("AI建议:", response.data.data.diningAdvice);
               const check = this.formatDate(this.selectedDate);
               for (let i = 0; i < this.oneDayRecord[check].length; i++) {
                 if (this.oneDayRecord[check][i].recordID === recordID) {
-                  this.oneDayRecord[check][i].diningAdvice = marked(response.data.diningAdvice);
+                  this.oneDayRecord[check][i].diningAdvice = marked(response.data.data.diningAdvice);
                   this.oneDayRecord[check][i].loading = false;
                 }
               }
               this.getVigorTokenBalance();
-              // 收到有效的AI建议，停止轮询
             } else if (attempts < maxAttempts) {
-              setTimeout(() => pollForAISuggestions(attempts + 1), 1000);  // 1秒后再次检查
+              setTimeout(() => pollForAISuggestions(attempts + 1), 1000);
             } else {
               console.error("AI suggestions could not be retrieved after 10 attempts.");
               ElNotification({
@@ -712,63 +673,46 @@ export default {
           });
       };
 
-      pollForAISuggestions();  // 开始轮询，每次调用都会创建独立的 attempts 变量
+      pollForAISuggestions();
     },
-    // 得到AI分析
-    getAIAnalysis(/*userID*/) {
+    getAIAnalysis(): void {
       const date = this.formatDate(this.selectedDate);
-      console.log(/*userID,*/ date);
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/MealRecords/GetAISummary?token=${token}`, {
-        params: {
-          //userID: userID,
-          date: date
-        }
-      })
+      console.log(date);
+      mealRecordApi.getAISummary(date)
         .then(response => {
           console.log("AI建议:", response.data.message);
           this.getAnalysis = true;
-          this.AIanalysis = marked(response.data.message);
+          this.AIanalysis = marked(response.data.data.message);
         })
         .catch(error => {
           console.error("Error getting AI suggestions:", error);
         });
     },
-    // 得到食物函数
-    getFoodFromDB() {
-      //const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/MealPlans/GetFoodsInfo`)
+    getFoodFromDB(): void {
+      mealPlanApi.getFoodsInfo()
         .then(response => {
-          console.log(response.data.foodsInfo);
-          this.food = response.data.foodsInfo.map(item => ({
+          console.log(response.data.data.foodsInfo);
+          this.food = response.data.data.foodsInfo.map(item => ({
             value: item.foodName,
             label: item.foodName
-          }))
-        })
+          }));
+        });
     },
-    // 得到计划函数
-    getRecordFromDB(/*userID,*/ date) {
-      date = this.formatDate(date);
-      console.log(date);
-      const token = localStorage.getItem('token');
-      axios.get(`http://localhost:8080/api/MealRecords/GetAllDetails?token=${token}`,
-        {
-          params: {
-            //userID: userID,
-            date: date
-          }
-        })
+    getRecordFromDB(date: Date): void {
+      const formattedDate = this.formatDate(date);
+      console.log(formattedDate);
+      mealRecordApi.getAllDetails(formattedDate)
         .then(response => {
-          this.oneDayRecord[date] = [];
-          response.data.records.forEach(item => {
-            console.log(response.data.records);
+          this.oneDayRecord[formattedDate] = [];
+          response.data.data.records.forEach(item => {
+            console.log(response.data.data.records);
             const getrecordID = item.recordID;
             const foods = item.foods.map(foodItem => ({
               foodName: foodItem.foodName,
               quantity: foodItem.quantity
             }));
             const length = foods.length;
-            this.oneDayRecord[date].push({
+            this.oneDayRecord[formattedDate].push({
               userID: item.userID,
               recordID: getrecordID,
               mealTime: new Date(item.mealTime),
@@ -780,21 +724,20 @@ export default {
               loading: false,
             });
           });
-        })
+        });
     },
-    // 更新计划函数
-    updateRecordToDB(planContent) {
+    updateRecordToDB(planContent: MealRecord): void {
       const requestData = {
         foods: planContent.foods.map(food => ({
           foodName: food.foodName,
-          quantity: food.quantity  // 确保每个食物对象包含 quantity 字段
+          quantity: food.quantity
         })),
         mealPhoto: planContent.mealPhoto,
         mealTime: planContent.mealTime,
         recordID: planContent.recordID
       };
       console.log("更新", requestData);
-      axios.put(`http://localhost:8080/api/MealRecords/Update`, requestData)
+      mealRecordApi.update(requestData)
         .then(response => {
           console.log(response.data.message);
           ElNotification({
@@ -808,53 +751,38 @@ export default {
           }
           for (let i = 0; i < this.oneDayRecord[check].length; i++) {
             if (this.oneDayRecord[check][i].recordID === planContent.recordID) {
-              //setTimeout(() => {
               this.getAISuggestions(this.oneDayRecord[check][i].recordID);
-              //}, 5000);
             }
           }
-        })
+        });
     },
-    // 删除计划函数
-    deleteRecordInDB(/*userID,*/ recordID) {
-      axios.delete(`http://localhost:8080/api/Mealrecords/Delete`, {
-        params: {
-          recordID: recordID
-        }
-      })
+    deleteRecordInDB(recordID: number): void {
+      mealRecordApi.delete(recordID)
         .then(response => {
           console.log(response.data.message);
-          // 显示通知
           ElNotification({
             message: response.data.message,
             type: 'success',
             duration: 2000
           });
-        })
+        });
     },
   },
-  computed: {
-    recordsForSelectedDate() {
-      const formattedDate = this.formatDate(this.selectedDate);
-      return this.oneDayRecord[formattedDate] || [];
-    }
-  },
   mounted() {
-    // 设置日期选择器的默认值为今天
     this.selectedDate = new Date();
   },
-  created() {//加载时触发
+  created() {
     this.getFoodFromDB();
     this.selectedDate = new Date();
-    this.getRecordFromDB(/*0,*/ this.selectedDate);
+    this.getRecordFromDB(this.selectedDate);
     this.getVigorTokenBalance();
   },
   watch: {
-    selectedDate(newDate) {
+    selectedDate(newDate: Date) {
       this.anaLoading = false;
       this.getAnalysis = false;
       this.AIanalysis = "";
-      this.getRecordFromDB(/*0,*/ newDate);
+      this.getRecordFromDB(newDate);
     }
   },
   setup() {
@@ -882,7 +810,7 @@ export default {
       glowButton,
     };
   },
-};
+});
 </script>
 
 <style scoped>
