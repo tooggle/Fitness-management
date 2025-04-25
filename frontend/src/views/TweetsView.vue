@@ -134,7 +134,6 @@ import axios from 'axios'
 import { ElNotification, ElMessageBox, ElMessage } from 'element-plus'
 import NotificationContent from '../components/NotificationContent.vue'
 import CommonLayout from "../components/CommonLayout.vue";
-import NavigationBar from '../components/NavigationBar.vue';
 import {useRouter} from 'vue-router'
 
 

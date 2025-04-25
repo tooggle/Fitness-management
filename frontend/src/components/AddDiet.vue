@@ -118,44 +118,35 @@
     </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import { ElNotification } from 'element-plus';
-import { CirclePlusFilled, Plus, UploadFilled } from '@element-plus/icons-vue';
-import { mealPlanApi } from '../api/services';
+<script>
 import foodBG2 from '../assets/images/foodBG2.jpg';
+import axios from 'axios';
+import { ElNotification } from 'element-plus';
 
-interface Recipe {
-    recipeID?: number;
-    title: string;
-    imgUrl: string;
-    content: string;
-    releaseTime?: Date;
-}
-
-export default defineComponent({
-    components: {
-        CirclePlusFilled,
-        Plus,
-        UploadFilled
-    },
+export default {
+    name: 'addDiet',
     data() {
         return {
             recipe: {
-                title: '',
-                imgUrl: '',
-                content: '',
                 recipeID: 0,
-                releaseTime: new Date()
-            } as Recipe,
-            showRec: false,
+                title: "",
+                imgUrl: "",
+                content: "",
+                releaseTime: "",
+            },
+            currentRecipe: {
+                recipeID: 0,
+                title: "",
+                imgUrl: "",
+                content: "",
+                releaseTime: "",
+            },
+            allRecipe: [],
             dialogVisible: false,
-            showDietContext: false,
-            currentRecipe: {} as Recipe,
-            recipeID: 0,
-            allRecipe: [] as Recipe[],
-            imageUrl: '',
+            showRec: false,
+            imageUrl: "",
             i: 0,
+            showDietContext: false,
             currentPage: 1,
             pageSize: 3,
             foodBG2
@@ -173,8 +164,8 @@ export default defineComponent({
         }
     },
     methods: {
-        formatDate(date: Date | undefined): string {
-            if (!date || !(date instanceof Date)) {
+        formatDate(date) {
+            if (!(date instanceof Date)) {
                 return '';
             }
             const year = date.getFullYear();
@@ -182,7 +173,7 @@ export default defineComponent({
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`; // 格式化为 yyyy-mm-dd
         },
-        beforeAvatarUpload(file: File) {
+        beforeAvatarUpload(file) {
             this.imageUrl = '';
             const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png';
             const isLt2M = file.size / 1024 / 1024 < 2;
@@ -209,10 +200,8 @@ export default defineComponent({
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
-                if (reader.result) {
-                    this.imageUrl = reader.result.toString();
+                    this.imageUrl = reader.result;
                 this.recipe.imgUrl = this.imageUrl;
-                }
             };
             return false;
         },
@@ -238,46 +227,40 @@ export default defineComponent({
                 });
             }
             this.recipe = {
-                title: '',
-                imgUrl: '',
-                content: '',
                 recipeID: 0,
-                releaseTime: new Date()
+                title: "",
+                imgUrl: "",
+                content: "",
+                releaseTime: "",
             };
             this.imageUrl = '';
         },
-        getDietInto(item: Recipe) {
+        getDietInto(item) {
             const truncatedText = item.content.slice(0, 100);
             const hasMore = item.content.length > 100;
             return hasMore ? `${truncatedText}...` : truncatedText;
         },
-        showDiet(item: Recipe) {
+        showDiet(item) {
             this.showDietContext = true;
             this.currentRecipe = { ...item };
             this.imageUrl = this.currentRecipe.imgUrl;
         },
-        showModi(item: Recipe) {
+        showModi(item) {
             this.showRec = true;
             this.currentRecipe = { ...item };
         },
-        deleteItem(item: Recipe) {
+        deleteItem(item) {
             // 查找要删除的项的索引
-            if (item.recipeID === undefined) return;
-            
             const index = this.allRecipe.findIndex(recipe => recipe.recipeID === item.recipeID);
 
             // 如果找到了索引，则删除该项
             if (index !== -1) {
                 const recipe = this.allRecipe[index];
-                if (recipe.recipeID !== undefined) {
                 this.deleteRecipe(recipe.recipeID);
-                }
                 this.allRecipe.splice(index, 1);
             }
         },
         saveModi() {
-            if (this.currentRecipe.recipeID === undefined) return;
-            
             const index = this.allRecipe.findIndex(recipe => recipe.recipeID === this.currentRecipe.recipeID);
             if (index !== -1) {
                 if (this.currentRecipe.title && this.currentRecipe.imgUrl && this.currentRecipe.content) {
@@ -300,16 +283,16 @@ export default defineComponent({
         formattedDescription() {
             return this.currentRecipe.content.replace(/\n/g, '<br>');
         },
-        handlePageChange(val: number) {
+        handlePageChange(val) {
             this.currentPage = val;
         },
 
         // 得到食谱函数
         getRecipeFromDB() {
-            mealPlanApi.getAllRecipes()
+            axios.get('http://localhost:8080/api/MealPlans/GetAllRecipes')
                 .then(response => {
                     this.allRecipe = [];
-                    response.data.data.recipes.forEach((item: { recipeID: number; title: string; imgUrl: string; content: string; releaseTime: string }) => {
+                    response.data.recipes.forEach(item => {
                         const time = new Date(item.releaseTime);
                         this.allRecipe.push({
                             recipeID: item.recipeID,
@@ -317,9 +300,9 @@ export default defineComponent({
                             imgUrl: item.imgUrl,
                             content: item.content,
                             releaseTime: time
-                        });
-                    });
-                });
+                        })
+                    })
+                })
         },
         // 插入食物信息
         sendRecipeToDB() {
@@ -327,65 +310,63 @@ export default defineComponent({
                 title: this.recipe.title,
                 imgUrl: this.recipe.imgUrl,
                 content: this.recipe.content
-            };
+            }
             console.log(requestData);
-            mealPlanApi.insertRecipe(requestData)
+            axios.post('http://localhost:8080/api/MealPlans/InsertRecipe', requestData)
                 .then(response => {
-                    this.recipe.recipeID = response.data.data.recipeID;
-                    this.recipe.releaseTime = new Date(response.data.data.releaseTime);
-                    console.log(response.data.data.message);
+                    this.recipe.recipeID = response.data.recipeID;
+                    this.recipe.releaseTime = new Date(response.data.releaseTime);
+                    console.log(response.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.data.message,
+                        message: response.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                });
+                })
         },
         // 更新食物信息
         UpdateRecipeToDB() {
-            if (!this.currentRecipe || this.currentRecipe.recipeID === undefined) {
-                return;
-            }
-            
-            // 由于我们已经检查了currentRecipe是否存在，可以安全地使用非空断言
             const requestData = {
-                recipeID: this.currentRecipe.recipeID,
-                title: this.currentRecipe.title!,
-                imgUrl: this.currentRecipe.imgUrl!,
-                content: this.currentRecipe.content!,
-            };
-            
+                recipeID: this.recipeID,
+                title: this.currentRecipe.title,
+                imgUrl: this.currentRecipe.imgUrl,
+                content: this.currentRecipe.content,
+            }
             console.log(requestData);
-            mealPlanApi.updateRecipe(requestData)
+            axios.put('http://localhost:8080/api/MealPlans/UpdateRecipe', requestData)
                 .then(response => {
-                    console.log(response.data.data.message);
+                    console.log(response.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.data.message,
+                        message: response.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                });
+                })
         },
         // 删除食物
-        deleteRecipe(recipeID: number) {
-            mealPlanApi.deleteRecipe(recipeID)
+        deleteRecipe(recipeID) {
+            axios.delete('http://localhost:8080/api/MealPlans/DeleteRecipe', {
+                params: {
+                    recipeID: recipeID
+                }
+            })
                 .then(response => {
-                    console.log(response.data.data.message);
+                    console.log(response.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.data.message,
+                        message: response.data.message,
                         type: 'success',
                         duration: 2000
                     });
-                });
+                })
         }
     },
     created() {//加载时触发
         this.getRecipeFromDB();
     }
-});
+}
 </script>
 
 <style>

@@ -64,143 +64,157 @@
 <script>
 import store from "../store/index.js";
 import { ElNotification } from "element-plus";
-import { userApi } from "../api/services";
+import axios from "axios";
 
-export default {
-    data() {
-        return {
-            LogInForm: {
-                email: '',
-                password: '',
-                role: 'user'
-            },
-            rules: {
-                email: [
-                    { required: true, message: '请输入邮箱', trigger: 'blur' },
-                    {
-                        trigger: 'blur',
-                        validator: (rule, value, callback) => {
-                            const emailReg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/;
-                            if (!value) callback();
-                            else if (emailReg.test(value)) callback();
-                            else callback(new Error("邮箱地址非法"));
+
+export default
+    {
+        data() {
+            return {
+                LogInForm:
+                {
+                    email: '',
+                    password: '',
+                    role: 'user' // 默认值设为用户登录
+                },
+                rules: {
+                    email: [
+                        { required: true, message: '请输入邮箱', trigger: 'blur' },
+                        {
+                            trigger: 'blur',
+                            validator: (rule, value, callback) => {
+                                const emailReg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/;
+                                if (!value) callback();
+                                else if (emailReg.test(value)) callback();
+                                else callback(new Error("邮箱地址非法"));
+                            }
                         }
-                    }
-                ],
-                password: [
-                    { required: true, message: '请输入密码', trigger: 'blur' },
-                    { min: 5, max: 16, message: '密码长度为5-16位', trigger: 'blur' }
-                ]
-            },
-            activeName: 'user',
-        };
-    },
-
-    methods: {
-        async submitForm(role) {
-
-                //测试使用：
-                // 预设的万能账号信息
-                // const superUserEmail = 'superuser@example.com';
-                // const superUserPassword = 'admin123';
-
-                // // 检查是否是万能账号
-                // if (
-                // this.LogInForm.email === superUserEmail &&
-                // this.LogInForm.password === superUserPassword
-                // ) {
-                // // 直接设置 Vuex 状态
-                // store.commit('setRole', 'admin'); // 假设万能账号是管理员角色
-                // store.commit('setToken', 'superuser-token'); // 设置一个模拟的 token
-                // store.commit('setUserID', 'superuser-id'); // 设置一个模拟的用户 ID
-                // store.commit('setName', 'Super User'); // 设置用户名
-                // store.commit('setIconUrl', '/path/to/superuser/icon.jpg'); // 设置用户头像路径
-                // store.commit('setEmail', superUserEmail); // 设置邮箱
-                // store.commit('setIntroduction', 'This is a super user.'); // 设置用户简介
-                // store.commit('setIsPost', true); // 假设万能账号有发帖权限
-
-                // // 跳转到管理员页面
-                // this.$router.push({ path: '/admin' });
-
-                // // 显示通知
-                // ElNotification({
-                //     message: '登录成功（万能账号）',
-                //     type: 'success',
-                //     duration: 2000,
-                // });
-
-                // return; // 退出方法，不再执行后续代码
-                // }
-
-                //以上测试使用
-            try {
-                if (role === 'admin') {
-                    this.LogInForm.role = 'admin';
-                }
-                const requestData = {
-                    email: this.LogInForm.email,
-                    password: this.LogInForm.password,
-                    role: this.LogInForm.role
-                };
-
-                console.log("发送请求的数据: ", requestData);
-
-                const response = await userApi.login(requestData.email, requestData.password, requestData.role);
-                console.log("收到响应的数据: ", response.data.message);
-
-                const response1 = await userApi.getPersonalProfile();
-
-                const message = response.data.message;
-                let notificationType = 'info';
-
-                if (message === '身份权限不符') {
-                    notificationType = 'error';
-                }
-
-                if (message === '登录成功') {
-                    notificationType = 'success';
-
-                    store.commit('setRole', requestData.role);
-                    store.commit('setToken', response.data.token);
-                    store.commit('setUserID', response1.data.userID);
-                    store.commit('setName', response1.data.userName);
-                    store.commit('setIconUrl', response1.data.iconURL);
-                    store.commit('setEmail', response1.data.email);
-                    store.commit('setIntroduction', response1.data.introduction);
-                    store.commit('setIsPost', response1.data.isPost);
-
-                    store.dispatch('pollIsPost');
-
-                    if (requestData.role === 'admin') {
-                        this.$router.push({ path: '/admin' });
-                    } else {
-                        this.$router.push({ name: 'home' });
-                    }
-                } else if (message === '邮箱不存在或错误' || message === '密码错误') {
-                    notificationType = 'error';
-                }
-
-                ElNotification({
-                    message: message,
-                    type: notificationType,
-                    duration: 2000
-                });
-
-            } catch (error) {
-                ElNotification({
-                    message: '用户名或密码错误',
-                    type: 'error',
-                    duration: 2000
-                });
-                console.error('Error login', error);
-            }
+                    ],
+                    password: [
+                        { required: true, message: '请输入密码', trigger: 'blur' },
+                        { min: 5, max: 16, message: '密码长度为5-16位', trigger: 'blur' }
+                    ]
+                },
+                activeName: 'user',
+            };
         },
 
-        signUp() {
-            this.$router.push("/SignUp");
-        }
-    },
-};
+        methods: {
+            async submitForm(role) {
+                //测试使用：
+                // 预设的万能账号信息
+                const superUserEmail = 'superuser@example.com';
+                const superUserPassword = 'admin123';
+
+                // 检查是否是万能账号
+                if (
+                this.LogInForm.email === superUserEmail &&
+                this.LogInForm.password === superUserPassword
+                ) {
+                // 直接设置 Vuex 状态
+                store.commit('setRole', 'admin'); // 假设万能账号是管理员角色
+                store.commit('setToken', 'superuser-token'); // 设置一个模拟的 token
+                store.commit('setUserID', 'superuser-id'); // 设置一个模拟的用户 ID
+                store.commit('setName', 'Super User'); // 设置用户名
+                store.commit('setIconUrl', '/path/to/superuser/icon.jpg'); // 设置用户头像路径
+                store.commit('setEmail', superUserEmail); // 设置邮箱
+                store.commit('setIntroduction', 'This is a super user.'); // 设置用户简介
+                store.commit('setIsPost', true); // 假设万能账号有发帖权限
+
+                // 跳转到管理员页面
+                this.$router.push({ path: '/admin' });
+
+                // 显示通知
+                ElNotification({
+                    message: '登录成功（万能账号）',
+                    type: 'success',
+                    duration: 2000,
+                });
+
+                return; // 退出方法，不再执行后续代码
+                }
+
+                //以上测试使用
+                try {
+                    if (role === 'admin') {
+                        this.LogInForm.role = 'admin';
+                    }
+                    const requestData = {
+                        email: this.LogInForm.email,  // 这里假设 email 字段用于用户名
+                        password: this.LogInForm.password,
+                        role: this.LogInForm.role  // 传递用户类型到后端，可能是 'user' 或 'admin'
+                    };
+
+                    console.log("发送请求的数据: ", requestData);
+
+                    const response = await axios.get(`http://localhost:8080/api/User/Login`, {
+                        params: {
+                            email: requestData.email,
+                            password: requestData.password,
+                            role: requestData.role
+                        }
+                    });
+                    console.log("收到响应的数据: ", response.data.message);
+
+                    const response1 = await axios.get(`http://localhost:8080/api/User/GetPersonalProfile?token=${response.data.token}`);
+
+                    const message = response.data.message;
+                    let notificationType = 'info';  // 默认类型为 'info'
+
+                    if (message === '身份权限不符') {
+                        notificationType = 'error';
+                    }
+
+                    if (message === '登录成功') {
+                        notificationType = 'success';
+
+                        // 只有在登录成功时才进行角色存储和页面跳转
+                        store.commit('setRole', requestData.role);
+                        store.commit('setToken', response.data.token);
+                        // 存储用户信息
+                        store.commit('setUserID', response1.data.userID);
+                        store.commit('setName', response1.data.userName);
+                        store.commit('setIconUrl', response1.data.iconURL)
+                        store.commit('setEmail', response1.data.email);
+                        store.commit('setIntroduction', response1.data.introduction)
+                        // 存储当前用户发帖权限
+                        store.commit('setIsPost', response1.data.isPost);
+
+                        store.dispatch('pollIsPost');  // 开启轮询，更新发帖权限
+
+                        if (requestData.role === 'admin') {
+                            this.$router.push({ path: '/admin' });
+                        } else {
+                            //this.$router.push({ name: 'UserProfile' });
+                            this.$router.push({ name: 'home' });
+                        }
+                    } else if (message === '邮箱不存在或错误' || message === '密码错误') {
+                        notificationType = 'error';
+                    }
+
+                    // 无论成功与否，都显示通知
+                    ElNotification({
+                        message: message,
+                        type: notificationType,
+                        duration: 2000
+                    });
+
+                } catch (error) {
+                    // 捕获请求异常并显示错误信息
+                    ElNotification({
+                        message: '用户名或密码错误',
+                        type: 'error',
+                        duration: 2000
+                    });
+                    console.error('Error login', error);
+                }
+            },
+
+            signUp() {
+                this.$router.push("/SignUp");
+            }
+        },
+    };
 </script>
 
 <style scoped>

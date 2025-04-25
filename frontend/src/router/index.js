@@ -15,7 +15,6 @@ import HealthyDiet from "../views/HealthyDiet.vue";
 import AddFoodView from "../views/AddFoodView.vue";
 import Achievements from "../views/AchievementsView.vue";
 import FitnessPlan from "../views/FitnessPlanView.vue";
-import ApiTestView from "../views/ApiTestView.vue";
 
 import chatRoom from "../views/chatRoom.vue";
 import ForumView from "../views/ForumView.vue";
@@ -137,13 +136,6 @@ const router = createRouter({
       path: "/addFood",
       name: "AddFood",
       component: AddFoodView,
-      meta: { requiresAuth: false },
-    },
-    // API测试页面
-    {
-      path: "/api-test",
-      name: "ApiTest",
-      component: ApiTestView,
       meta: { requiresAuth: false },
     },
     // 登录界面

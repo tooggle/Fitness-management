@@ -6,6 +6,7 @@
 </template>
 
 <script>
+
 import { defineComponent } from "vue";
 import {RouterView, useRouter} from 'vue-router';
 import AIGuide from "../components/AIGuide.vue"
@@ -14,12 +15,11 @@ import AddDiet from "../components/AddDiet.vue"
 import {ElNotification} from "element-plus";
 import axios from "axios";
 import { commonMixin } from '../mixins/checkLoginState';
-import NavigationBar from '../components/NavigationBar.vue';
-import CommonLayout from '../components/CommonLayout.vue';
+
 
 export default defineComponent({
     mixins: [commonMixin],
-    components: { AIGuide, adminEquipment, AddDiet, NavigationBar, CommonLayout },
+    components: { AIGuide, adminEquipment, AddDiet },
     created() {
       this.checkAvailable()
     },

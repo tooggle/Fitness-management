@@ -148,8 +148,6 @@ import {
   Check,
   SuccessFilled,
 } from "@element-plus/icons-vue";
-import NavigationBar from '../components/NavigationBar.vue';
-import CommonLayout from '../components/CommonLayout.vue';
 
 export default {
   components: {
@@ -158,8 +156,6 @@ export default {
     [CaretBottom.name]: CaretBottom,
     [Check.name]: Check,
     [SuccessFilled.name]: SuccessFilled,
-    NavigationBar,
-    CommonLayout
   },
   data() {
     return {

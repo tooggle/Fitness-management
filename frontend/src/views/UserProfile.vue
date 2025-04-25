@@ -129,8 +129,6 @@
               <textarea
                 v-model="profile.introduction"
                 @blur="emitSave('introduction')"
-                placeholder="写下你的个性签名..."
-                class="enhanced-textarea"
               ></textarea>
             </div>
           </section>
@@ -296,7 +294,7 @@
                   >
                     <div class="popup-content">
                       <RankingList :achievementId="currentAchievementId" />
-                      <button @click="hidePopup" class="close-btn">×</button>
+                      <button @click="hidePopup">Close</button>
                     </div>
                   </div>
                   <div v-if="tooltipVisibleIndex === index" class="tooltip">
@@ -367,7 +365,6 @@ import {
   ShareAltOutlined,
   DeleteOutlined,
 } from "@ant-design/icons-vue";
-import { postApi, userApi } from "../api/services";
 
 export default {
   mixins: [commonMixin],
@@ -548,8 +545,16 @@ export default {
       }
     },
     async fetchUserPosts() {
+      const token = localStorage.getItem("token");
       try {
-        const response = await postApi.getPostByUserID(this.$route.params.userID);
+        const response = await axios.get(
+          `http://localhost:8080/api/Post/GetPostByUserID?token=${token}`,
+          {
+            params: {
+              userID: this.$route.params.userID,
+            },
+          }
+        );
         this.posts = response.data;
         console.log("获取用户帖子成功：", this.posts);
       } catch (error) {
@@ -568,7 +573,8 @@ export default {
     },
     beforeAvatarUpload(file) {
       this.imagePreview = "";
-      const isJPGorPNG = file.type === "image/jpeg" || file.type === "image/png";
+      const isJPGorPNG =
+        file.type === "image/jpeg" || file.type === "image/png";
       const isLt2M = file.size / 1024 / 1024 < 2;
 
       if (!isJPGorPNG) {
@@ -806,9 +812,12 @@ export default {
 };
 </script>
 
+
+
+
 <style scoped>
 .bg {
-  background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2)), url("../assets/images/forum-bg.jpg");
+  background-image: url("../assets/images/forum-bg.jpg");
   background-size: cover;
   background-position: center;
   background-attachment: fixed;
@@ -817,8 +826,8 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
-  padding-top: 40px;
-  padding-bottom: 40px;
+  padding-top: 30px;
+  padding-bottom: 30px;
 }
 
 .user-profile {
@@ -835,31 +844,40 @@ export default {
   width: 100%;
   max-width: 80vw;
   margin: auto;
-  background-color: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  border-radius: 20px;
+  background-color: rgba(253, 248, 248, 0.6);
+  /* 半透明的背景 */
+  backdrop-filter: blur(10px);
+  /* 添加模糊效果，模拟磨砂感 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1),
+    /* 主阴影 */ 0 6px 20px rgba(0, 0, 0, 0.1);
+  /* 次阴影，增强立体感 */
+  border-radius: 15px;
+  /* 圆角半径，增加平滑感 */
   justify-content: space-between;
+  /* 避免子元素溢出边界 */
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  /*height: 100vh;*/
+  /*transform: scale(0.5); !* 缩放比例 0.8 即缩小为原尺寸的 80% *!*/
+  /*transform-origin: top left; !* 以左上角为缩放中心，或选择其他位置 *!*/
 }
 
 .profile-sidebar {
-  width: 22%;
-  padding: 25px;
+  width: 20%;
+  padding: 20px;
   text-align: center;
   display: flex;
   flex-direction: column;
   position: relative;
-  top: 130px;
+  /*justify-content: center;*/
+  top: 150px;
   background-color: transparent;
   border: none;
 }
 
 .profile-main {
-  width: 78%;
+  width: 80%;
   margin-left: 0px;
-  padding: 30px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -869,41 +887,27 @@ export default {
 .avatar-wrapper {
   position: relative;
   cursor: pointer;
-  margin-bottom: 15px;
-  transition: transform 0.3s ease;
-}
-
-.avatar-wrapper:hover {
-  transform: scale(1.03);
 }
 
 .avatar {
   width: 200px;
   height: 200px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 5px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
+  position: relative;
 }
 
 .edit-icon {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
+  bottom: 0;
+  right: 0;
   background-color: #42b983;
   color: white;
   border-radius: 50%;
   cursor: pointer;
   font-size: 14px;
-  padding: 8px 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-}
-
-.edit-icon:hover {
-  background-color: #3aa876;
-  transform: scale(1.1);
+  padding: 5px 10px;
+  transform: translate(1%, 1%);
+  /* 调整 transform，使图标更加贴近头像的右下角 */
 }
 
 .file-input {
@@ -913,45 +917,30 @@ export default {
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 15px;
+  gap: 5px;
+  margin-top: 10px;
   justify-content: center;
 }
 
 .tag {
-  border-radius: 20px;
-  padding: 6px 12px;
+  border-radius: 15px;
+  padding: 5px 10px;
   font-size: 14px;
   color: white;
   margin: 3px;
   display: inline-block;
   position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.tag:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .remove-tag {
   margin-left: 8px;
   cursor: pointer;
-  font-weight: bold;
-  transition: color 0.2s;
-}
-
-.remove-tag:hover {
-  color: #ff4d4d;
 }
 
 .tag-input input {
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid #ddd;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  font-size: 14px;
+  padding: 5px;
+  border-radius: 15px;
+  border: 1px solid #ccc;
 }
 
 .add-tag {
@@ -964,13 +953,6 @@ export default {
   line-height: 1;
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-}
-
-.add-tag:hover {
-  background-color: #3aa876;
-  transform: scale(1.1);
 }
 
 .profile-info {
@@ -980,14 +962,12 @@ export default {
   font-size: 20px;
   color: #333;
   text-align: left;
-  margin-bottom: 20px;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   gap: 20px;
-  transition: all 0.3s ease;
 }
 
 .uniform-row > .editable-field,
@@ -998,15 +978,15 @@ export default {
 p {
   height: 50px;
   margin: 5px 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(204, 204, 204, 0.5);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.4);
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: transparent;
+  /*font-size: 20px;*/
   text-align: left;
   color: #333;
+  /*line-height: 24px;*/
   overflow: auto;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .profile-editor,
@@ -1014,78 +994,22 @@ p {
   display: flex;
   flex-direction: column;
   width: 32%;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   font-size: 20px;
   color: #333;
   text-align: left;
 }
 
-label {
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #2c3e50;
-  font-size: 16px;
-}
-
 input,
 select {
-  padding: 10px 12px;
-  border: 1px solid rgba(204, 204, 204, 0.8);
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.4);
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: transparent;
   height: 50px;
+  /* 增加输入框和选择框的高度 */
   font-size: 16px;
   width: 100%;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-input:focus,
-select:focus {
-  outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
-}
-
-.profile-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 25px;
-  font-size: 20px;
-}
-
-.cancel-button,
-.save-button {
-  padding: 10px 24px;
-  margin-left: 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.cancel-button {
-  background-color: #f56c6c;
-  color: white;
-}
-
-.cancel-button:hover {
-  background-color: #e64942;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.save-button {
-  background-color: #42b983;
-  color: white;
-}
-
-.save-button:hover {
-  background-color: #3aa876;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal {
@@ -1094,31 +1018,17 @@ select:focus {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(5px);
-  animation: modalFadeIn 0.3s ease-out;
-}
-
-@keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 .large-avatar {
   max-width: 90%;
   max-height: 90%;
   border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  animation: avatarZoomIn 0.4s ease-out;
-}
-
-@keyframes avatarZoomIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 .signature-editor {
@@ -1129,134 +1039,309 @@ select:focus {
 }
 
 .signature-textarea textarea {
-  height: 80px;
-  font-size: 18px;
+  height: 50px;
+  font-size: 20px;
   line-height: 1.5;
   width: 100%;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  background-color: transparent;
   resize: none;
   border: 1px solid #ccc;
-  padding: 12px 15px;
-  transition: all 0.3s ease;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 10px;
 }
 
-.signature-textarea textarea:focus {
-  outline: none;
-  border-color: #42b983;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  font-size: 20px;
 }
 
-.enhanced-textarea::placeholder {
-  color: #aaa;
-  font-style: italic;
+.cancel-button,
+.save-button {
+  padding: 10px 20px;
+  margin-left: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancel-button {
+  background-color: #d9534f;
+  color: white;
+}
+
+.save-button {
+  background-color: #5cb85c;
+  color: white;
+}
+
+/* 新增的帖子列表样式 
+.post-list {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.post-item {
+    padding: 10px;
+    border-bottom: 1px solid #ccc;
+}
+
+.post-item h4 {
+    margin: 0;
+    font-size: 18px;
+    text-align: left;
+}
+
+.post-item p {
+    margin: 5px 0;
+    font-size: 14px;
+    color: #555;
+}
+
+.post-item small {
+    color: #999;
+}*/
+
+.balance-display {
+  display: flex;
+  align-items: center;
+  /* 垂直居中 */
+}
+
+.balance-amount {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+  /* 移除默认的外边距 */
+  text-align: center;
+  /* 文本居中 */
+  line-height: 1.5;
+  /* 调整行高 */
+  background: none;
+  /* 移除背景 */
+  border: none;
+  /* 移除边框 */
+}
+
+.balance-records-container {
+  width: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
+  /* 垂直滚动条 */
+  margin-top: 20px;
+}
+
+.balance-records {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.balance-records th,
+.balance-records td {
+  border: 1px solid #dbd7d7;
+  padding: 8px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.balance-records tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.balance-records tr:hover {
+  background-color: #ddd;
+}
+
+.positive {
+  color: #005800;
+  font-size: 16px !important;
+}
+
+.negative {
+  color: #910000;
+  font-size: 16px !important;
+}
+
+h3 {
+  font-size: 20px;
+  color: #333;
+  text-align: left;
+}
+
+/* 针对 input 输入框 */
+input[type="text"],
+input[type="number"],
+select {
+  font-size: 20px;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 强制应用样式到 EditableField 组件内部 */
+::v-deep .editable-field input {
+  font-size: 20px;
+  /* 设置字体大小 */
+  padding: 8px;
+  /* 添加内边距 */
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.back-button-container {
+  position: absolute;
+  top: 10px;
+  /* 调整为你需要的上边距 */
+  left: 10px;
+  /* 调整为你需要的左边距 */
+  z-index: 1000;
 }
 
 .button-container {
   text-align: left;
-  margin: 20px 0 10px;
+  /* 确保按钮靠左对齐 */
 }
 
 .toggle-button {
-  background-color: #42b983;
+  background-color: #43b984;
+  /* 按钮背景颜色 */
   color: #ffffff;
+  /* 按钮文字颜色 */
   border: none;
-  padding: 12px 24px;
-  margin-bottom: 15px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  margin-bottom: 10px;
+  border-radius: 5px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-  position: relative;
-  overflow: hidden;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .toggle-button:hover {
-  background-color: #3aa876;
-  transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
+  background-color: #296446;
+  /* 悬停时的背景颜色 */
 }
 
 .toggle-button:active {
   transform: scale(0.98);
-}
-
-.toggle-button::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 5px;
-  height: 5px;
-  background: rgba(255, 255, 255, 0.5);
-  opacity: 0;
-  border-radius: 100%;
-  transform: scale(1, 1) translate(-50%);
-  transform-origin: 50% 50%;
-}
-
-.toggle-button:focus:not(:active)::after {
-  animation: ripple 1s ease-out;
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(0, 0);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(30, 30);
-    opacity: 0;
-  }
+  /* 点击时的缩小效果 */
 }
 
 .post-list,
 .vitality-balance,
 .achievement-section {
-  margin-bottom: 30px;
+  margin-bottom: 20px;
+  /* 为两个部分添加一些下边距 */
   max-height: 500px;
   overflow-y: auto;
-  border-radius: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: #42b983 transparent;
 }
 
-.post-list::-webkit-scrollbar,
-.vitality-balance::-webkit-scrollbar,
-.achievement-section::-webkit-scrollbar {
-  width: 6px;
+.achievement-container {
+  margin-top: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
 }
 
-.post-list::-webkit-scrollbar-track,
-.vitality-balance::-webkit-scrollbar-track,
-.achievement-section::-webkit-scrollbar-track {
-  background: transparent;
+.achievement-item-wrapper {
+  position: relative;
+  /* 确保 tooltip 能正确定位 */
+  width: 20%;
+  /* 宽度为父容器的20% */
+  aspect-ratio: 1 / 1;
+  /* 保持宽高比为1:1，确保容器为正方形 */
 }
 
-.post-list::-webkit-scrollbar-thumb,
-.vitality-balance::-webkit-scrollbar-thumb,
-.achievement-section::-webkit-scrollbar-thumb {
-  background-color: #42b983;
-  border-radius: 6px;
+.achievement-item {
+  position: relative;
+  width: 80%;
+  /* 宽度为父容器的100% */
+  aspect-ratio: 1 / 1;
+  /* 保持宽高比为1:1，确保容器为正方形 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  /* 确保遮罩层不会超出图片边界 */
+  border-radius: 50%;
+  /* 保持圆形 */
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.achievement-item img {
+  width: 100%;
+  /* 宽度占满容器 */
+  height: 100%;
+  /* 高度占满容器 */
+  object-fit: cover;
+  /* 确保图片填满容器且不失真 */
+  border-radius: 50%;
+  position: relative;
+  z-index: 1;
+}
+
+.achievement-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  /* 半透明黑色遮罩 */
+  border-radius: 50%;
+  /* 保持与图片一致的圆形 */
+  z-index: 2;
+  transform-origin: bottom;
+  transform: scaleY(calc(1 - var(--progress)));
+  /* 根据进度动态调整 */
+  transition: transform 0.3s ease;
+  /* 添加动画效果 */
+}
+
+.achievement-item:hover::before {
+  transform: scaleY(0);
+  /* 悬停时显示完整图片 */
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 0%;
+  /* 确保 tooltip 在 achievement-item 的上方 */
+  left: 100%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  white-space: nowrap;
+  z-index: 1000;
+  display: block;
+}
+
+.achievement-content {
+  height: 40px;
+  margin: 0px 0;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: transparent;
+  text-align: left;
 }
 
 .post-item {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.6);
   color: #000;
   padding: 20px;
   margin-bottom: 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(230, 230, 230, 0.8);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-  transition: all 0.3s ease;
-}
-
-.post-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  border: 2px solid #ddd;
 }
 
 .post-content {
@@ -1268,39 +1353,26 @@ select:focus {
   color: #007bff;
   margin-bottom: 10px;
   cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.post-title:hover {
-  color: #0056b3;
-  text-decoration: underline;
 }
 
 .post-title .category-tag {
   background-color: #f0f0f0;
   border-radius: 50px;
-  padding: 3px 10px;
+  padding: 3px 8px;
   font-size: 12px;
   color: #555;
   margin-left: 10px;
-  transition: all 0.2s ease;
-}
-
-.post-title:hover .category-tag {
-  background-color: #e6e6e6;
 }
 
 .post-snippet {
   font-size: 16px;
-  color: #555;
-  line-height: 1.5;
-  margin: 10px 0;
+  color: #666;
 }
 
 .post-footer {
   margin-top: 15px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   font-size: 14px;
   color: #888;
@@ -1308,9 +1380,9 @@ select:focus {
 }
 
 .post-actions {
-  color: #555;
+  color: blue;
   display: flex;
-  gap: 20px;
+  gap: 15px;
   align-items: center;
 }
 
@@ -1318,7 +1390,11 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 5px;
-  transition: color 0.2s ease;
+}
+
+.icon-with-text.no-click {
+  pointer-events: none;
+  cursor: default;
 }
 
 .icon-with-text-delete {
@@ -1326,353 +1402,72 @@ select:focus {
   align-items: center;
   gap: 5px;
   cursor: pointer;
-  color: #f56c6c;
-  transition: all 0.2s ease;
-}
-
-.icon-with-text-delete:hover {
-  color: #e64942;
-  transform: scale(1.1);
 }
 
 .post-image {
   text-align: left;
-  margin: 15px 0;
+  margin: 10px 0;
 }
 
 .post-image .image {
-  width: 120px;
+  width: 100px;
+  /* 固定宽度 */
   height: auto;
-  border-radius: 8px;
+  /* 高度自动调整以保持比例 */
+  border-radius: 5px;
   display: inline-block;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
 }
-
-.post-image .image:hover {
-  transform: scale(1.05);
-}
-
-.balance-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 20px 0;
-}
-
-.balance-amount {
-  font-size: 32px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 20px;
-  text-align: center;
-  line-height: 1.5;
-  background: none;
-  border: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.balance-records-container {
-  width: 100%;
-  max-height: 60vh;
-  overflow-y: auto;
-  margin-top: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.balance-records {
-  width: 100%;
-  border-collapse: collapse;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.balance-records th,
-.balance-records td {
-  padding: 12px 15px;
-  text-align: center;
-  font-size: 16px;
-  border: none;
-}
-
-.balance-records th {
-  background-color: #42b983;
-  color: white;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  font-size: 14px;
-}
-
-.balance-records tr {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: background-color 0.2s ease;
-}
-
-.balance-records tr:last-child {
-  border-bottom: none;
-}
-
-.balance-records tr:nth-child(even) {
-  background-color: rgba(242, 242, 242, 0.5);
-}
-
-.balance-records tr:hover {
-  background-color: rgba(66, 185, 131, 0.1);
-}
-
-.positive {
-  color: #67C23A;
-  font-weight: 600;
-  font-size: 16px !important;
-}
-
-.negative {
-  color: #F56C6C;
-  font-weight: 600;
-  font-size: 16px !important;
-}
-
-h3 {
-  font-size: 22px;
-  color: #2c3e50;
-  text-align: left;
-  margin: 25px 0 15px;
-  position: relative;
-  padding-bottom: 10px;
-}
-
-h3::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 50px;
-  height: 3px;
-  background-color: #42b983;
-  border-radius: 3px;
-}
-
-.achievement-container {
-  margin-top: 30px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  justify-content: center;
-  padding: 10px;
-}
-
-.achievement-item-wrapper {
-  position: relative;
-  width: 18%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.achievement-item {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-  border-radius: 50%;
-  background-color: transparent;
-  cursor: pointer;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-.achievement-item:hover {
-  transform: scale(1.05) translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
-}
-
-.achievement-item img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  position: relative;
-  z-index: 1;
-  transition: all 0.3s ease;
-}
-
-.achievement-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 50%;
-  z-index: 2;
-  transform-origin: bottom;
-  transform: scaleY(calc(1 - var(--progress)));
-  transition: transform 0.5s ease;
-}
-
-.achievement-item:hover::before {
-  transform: scaleY(0);
-}
-
-.tooltip {
-  position: absolute;
-  bottom: 0%;
-  left: 100%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.85);
-  color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  white-space: nowrap;
-  z-index: 1000;
-  display: block;
-  min-width: 200px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(5px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  animation: fadeIn 0.3s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-  to { opacity: 1; transform: translateX(-50%) translateY(0); }
-}
-
-.tooltip h4 {
-  margin-top: 0;
-  margin-bottom: 10px;
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  padding-bottom: 8px;
-}
-
-.achievement-content {
-  height: auto;
-  min-height: 40px;
-  margin: 10px 0;
-  padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background-color: rgba(255, 255, 255, 0.1);
-  text-align: left;
-}
-
 .popup-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.75);
+  top: 50%; /* 使弹窗垂直居中 */
+  left: 50%; /* 使弹窗水平居中 */
+  transform: translate(-50%, -50%); /* 将弹窗偏移，确保它在网页的中间 */
+  width: auto;
+  height: auto;
+  background: rgba(0, 0, 0, 0y); /* 半透明背景 */
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 10000;
-  backdrop-filter: blur(8px);
-  animation: fadeIn 0.3s forwards ease-in-out;
+  opacity: 0; /* 初始透明度 */
+  animation: fadeIn 0.3s forwards ease-in-out; /* 背景淡入动画 */
+  z-index: 10000; /* 确保弹窗内容在弹窗背景之上 */
 }
 
 .popup-content {
-  background: white;
-  padding: 30px;
-  border-radius: 15px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
   position: relative;
-  width: 80%;
-  max-width: 800px;
+  width: auto;
+  max-width: 1000px; /* 设置最大宽度 */
   height: auto;
-  max-height: 80vh;
+  max-height: 1000px; /* 设置最大高度 */
   overflow-y: auto;
-  transform: scale(0.9);
-  opacity: 0;
-  animation: popupZoomIn 0.4s forwards ease-out;
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  transform: scale(0.3); /* 初始缩放比例 */
+  opacity: 0; /* 初始透明度 */
+  animation: popupZoomIn 1s forwards ease-in-out; /* 弹窗缩放动画 */
+  z-index: 10000; /* 确保弹窗内容在弹窗背景之上 */
 }
 
-.popup-content button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.popup-content button:hover {
-  background-color: #e64942;
-  transform: scale(1.1);
-}
-
+/* 弹窗的缩放动画 */
 @keyframes popupZoomIn {
   0% {
-    transform: scale(0.9);
-    opacity: 0;
+    transform: scale(0.8); /* 初始缩小到80% */
+    opacity: 0; /* 初始透明 */
   }
   100% {
-    transform: scale(1);
-    opacity: 1;
+    transform: scale(1); /* 最终放大至正常比例 */
+    opacity: 1; /* 完全显示 */
   }
 }
 
-.back-button-container {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  z-index: 1000;
-}
-
-.el-button.is-circle {
-  transition: all 0.3s ease;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
-}
-
-.el-button.is-circle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
-}
-
-.popup-content .close-btn {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background-color: #f56c6c;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 20px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 0;
-}
-
-.popup-content .close-btn:hover {
-  background-color: #e64942;
-  transform: scale(1.1);
+/* 背景淡入动画 */
+@keyframes fadeIn {
+  0% {
+    opacity: 0; /* 初始透明 */
+  }
+  100% {
+    opacity: 1; /* 完全显示 */
+  }
 }
 </style>

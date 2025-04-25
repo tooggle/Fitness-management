@@ -69,37 +69,25 @@
 import { defineComponent, nextTick } from 'vue';
 import { ElNotification } from 'element-plus';
 import foodBG1 from '../assets/images/foodBG1.jpg';
-import { mealPlanApi } from '../api/services';
-
-// 定义食物接口
-interface Food {
-    foodName: string;
-    calorie: number;
-    isEditing?: boolean;
-}
-
-// 定义表格引用接口
-interface TableRef {
-    $el: HTMLElement;
-}
+import axios from 'axios';
 
 export default defineComponent({
     name: 'addFood',
     data() {
         return {
-            foods: [] as Food[],
+            foods: [],
             canAdd: true,
             foodBG1,
         };
     },
     methods: {
-        tableRowClassName({ rowIndex }: { rowIndex: number }) {
+        tableRowClassName({ rowIndex }) {
             return rowIndex % 2 === 1 ? 'warning-row' : 'success-row';
         },
-        handleEdit(index: number) {
+        handleEdit(index) {
             this.foods[index].isEditing = true;
         },
-        handleDelete(index: number) {
+        handleDelete(index) {
             const row = this.foods[index];
             this.deleteFood(row.foodName);
             this.foods.splice(index, 1);
@@ -107,20 +95,17 @@ export default defineComponent({
         onAddItem() {
             if (this.canAdd) {
                 this.canAdd = false;
-                const newFood: Food = { foodName: '', calorie: 0, isEditing: true };
+                const newFood = { foodName: '', calorie: 0, isEditing: true };
                 this.foods.push(newFood);
                 nextTick(() => {
-                    const foodTable = this.$refs.foodTable as unknown as TableRef;
-                    const table = foodTable.$el.querySelector('.el-table__body-wrapper tbody');
-                    if (table) {
+                    const table = this.$refs.foodTable.$el.querySelector('.el-table__body-wrapper tbody');
                     const rows = table.children;
                     const lastRow = rows[rows.length - 1];
                     lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
                 });
             }
         },
-        saveEdit(index: number) {
+        saveEdit(index) {
             const row = this.foods[index];
             if (this.validateFoodName(row) && this.validateCalorie(row)) {
                 row.isEditing = false;
@@ -132,7 +117,7 @@ export default defineComponent({
                 }
             }
         },
-        cancelEdit(index: number) {
+        cancelEdit(index) {
             const row = this.foods[index];
             if (row.calorie > 1 && row.calorie < 10000 && row.foodName) {             
                 row.isEditing = false;
@@ -141,7 +126,7 @@ export default defineComponent({
             }
             this.canAdd = true;
         },
-        validateCalorie(row: Food) {
+        validateCalorie(row) {
             if (row.calorie < 1 || row.calorie > 10000) {
                 ElNotification({
                     title: '警告',
@@ -153,7 +138,7 @@ export default defineComponent({
             }
             return true;
         },
-        validateFoodName(row: Food) {
+        validateFoodName(row) {
     // 检查食物名称是否为空
     if (!row.foodName.trim()) {
         ElNotification({
@@ -184,57 +169,60 @@ export default defineComponent({
     return true;
 },
         getFoodFromDB() {
-            mealPlanApi.getFoodsInfo()
+            axios.get('http://localhost:8080/api/MealPlans/GetFoodsInfo')
                 .then(response => {
-                    console.log(response.data.data.foodsInfo);
-                    response.data.data.foodsInfo.forEach((item: { foodName: string; calories: number }) => {
-                        const food: Food = { foodName: item.foodName, calorie: item.calories };
+                    console.log(response.data.foodsInfo);
+                    response.data.foodsInfo.forEach(item => {
+                        const food = { foodName: item.foodName, calorie: item.calorie };
                         this.foods.push(food);
                     });
                     console.log(this.foods);
                 });
         },
-        sendFoodToDB(food: Food) {
+        sendFoodToDB(food) {
             const requestData = {
                 foodName: food.foodName,
                 calorie: food.calorie,
             };
             console.log('send', requestData);
-            mealPlanApi.insertFoodInfo(requestData)
+            axios.post('http://localhost:8080/api/MealPlans/InsertFoodInfo', requestData)
                 .then(response => {
-                    console.log(response.data.data.message);
+                    console.log(response.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.data.message,
+                        message: response.data.message,
                         type: 'success',
                         duration: 2000
                     });
                 });
         },
-        UpdateFoodToDB(food: Food) {
+        UpdateFoodToDB(food) {
             const requestData = {
                 foodName: food.foodName,
                 calorie: food.calorie,
             };
             console.log(requestData);
-            mealPlanApi.updateFoodInfo(requestData)
+            axios.put('http://localhost:8080/api/MealPlans/UpdateFoodInfo', requestData)
                 .then(response => {
-                    console.log(response.data.data.message);
+                    console.log(response.data.message);
                     // 显示通知
                     ElNotification({
-                        message: response.data.data.message,
+                        message: response.data.message,
                         type: 'success',
                         duration: 2000
                     });
                 });
         },
-        deleteFood(foodName: string) {
-            mealPlanApi.deleteFoodInfo(foodName)
-                .then(response => {
-                    console.log(response.data.data.message);
+        deleteFood(foodName) {
+            axios.delete('http://localhost:8080/api/MealPlans/DeleteFoodInfo', {
+                params: {
+                    foodName: foodName,
+                },
+            }).then(response => {
+                console.log(response.data.message);
                 // 显示通知
                 ElNotification({
-                        message: response.data.data.message,
+                    message: response.data.message,
                     type: 'success',
                     duration: 2000
                 });

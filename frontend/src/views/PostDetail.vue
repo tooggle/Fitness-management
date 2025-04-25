@@ -177,7 +177,6 @@ import store from '../store/index.js';
 import { commonMixin } from '../mixins/checkLoginState';
 import CommentItem from '../components/CommentItem.vue';
 import NotificationBox from '../components/NotificationBox.vue';
-import { postApi, commentApi } from "../api/services";
 
 export default {
   mixins: [commonMixin],
@@ -316,8 +315,14 @@ export default {
       console.log('isContainerVisible:', this.isContainerVisible); // 调试输出
     },
     fetchPostDetail() {
+      const token = localStorage.getItem('token');
       const postID = this.$route.params.postID;
-      postApi.getPostByPostID(postID)
+      axios.get(`http://localhost:8080/api/Post/GetPostByPostID`, {
+        params: {
+          token: token,
+          postID: postID
+        }
+      })
           .then(response => {
             console.log(response.data);
             this.post = response.data;
@@ -333,16 +338,46 @@ export default {
           });
     },
     fetchComments(postID) {
-      commentApi.getCommentByPostID(postID)
+      const token = localStorage.getItem('token');
+      axios.get(`http://localhost:8080/api/Comment/GetCommentByPostID`, {
+        params: {
+          token: token,
+          postID: postID
+        }
+      })
           .then(response => {
-            this.comments = response.data;
+            // 对评论数据按发表时间升序排列
+            this.comments = response.data
+                .map(comment => {
+                  return {
+                    ...comment,
+                    likedByCurrentUser: false,
+                    showReplies: false,
+                    replies: [] // 确保replies数组存在
+                  };
+                })
+                .sort((a, b) => new Date(a.commentTime) - new Date(b.commentTime));  // 按发表时间升序排列
+
+            this.hasCommentsNotification = false; // 重置标志位
           })
           .catch(error => {
+            if (error.response && error.response.status === 404) {
+              this.comments = []; // 评论列表为空
+              if (!this.hasCommentsNotification) {  // 检查是否已经提示过
+                ElNotification({
+                  title: '提示',
+                  message: '该帖子暂无评论',
+                  type: 'info',
+                });
+                this.hasCommentsNotification = true;  // 设置标志位为已提示
+              }
+            } else {
               ElNotification({
                 title: '错误',
                 message: '获取评论时发生错误',
                 type: 'error',
               });
+            }
           });
     },
 
@@ -449,39 +484,77 @@ export default {
       }
     },
     addComment() {
-      if (!this.newCommentText.trim()) {
-        ElNotification({
-          title: '提示',
-          message: '评论内容不能为空',
-          type: 'warning',
-        });
-        return;
-      }
-
-      const commentData = {
+      const token = localStorage.getItem('token');
+      if (this.newCommentText.trim()) {
+        const newComment = {
+          commentID: -1,
+          userID: this.$store.state.userID,
+          userName: localStorage.getItem('name'),
           postID: this.post.postID,
-        content: this.newCommentText,
-        parentCommentID: this.replyingTo ? this.replyingTo.commentID : null
-      };
+          parentCommentID: this.replyingTo ? this.replyingTo.commentID : -1,
+          commentTime: new Date().toISOString(),
+          likesCount: 0,
+          content: this.newCommentText.trim()
+        };
 
-      commentApi.publishComment(commentData)
+        if (this.replyingTo) {
+          axios.post(`http://localhost:8080/api/Comment/ReplyComment?token=${token}`, newComment)
               .then(response => {
+                if (response.data.message === '回复成功') {
+                  this.newCommentText = ""; // 清空输入框
+                  ElNotification({
+                    title: '成功',
+                    message: '回复成功',
+                    type: 'success',
+                  });
+                  // 更新被回复的评论的回复列表
+                  this.fetchReplies(this.replyingTo);
+                  this.replyingTo = null; // 清除回复目标
+                } else {
+                  ElNotification({
+                    title: '错误',
+                    message: '回复失败',
+                    type: 'error',
+                  });
+                }
+              })
+              .catch(error => {
+                ElNotification({
+                  title: '错误',
+                  message: '回复时发生错误',
+                  type: 'error',
+                });
+              });
+        } else {
+          // 处理一级评论发布的情况
+          axios.post(`http://localhost:8080/api/Comment/PublishComment?token=${token}`, newComment)
+              .then(response => {
+                if (response.data.message === '发布评论成功') {
+                  this.checkForAIComment(); // 检查并获取AI评论
+                  this.newCommentText = ""; // 清空输入框
                   ElNotification({
                     title: '成功',
                     message: '评论发布成功',
                     type: 'success',
                   });
-            this.newCommentText = '';
-            this.replyingTo = null;
-            this.fetchComments(this.post.postID);
+                  this.fetchComments(this.post.postID); // 重新获取评论列表
+                } else {
+                  ElNotification({
+                    title: '错误',
+                    message: '发布评论失败',
+                    type: 'error',
+                  });
+                }
               })
               .catch(error => {
                 ElNotification({
                   title: '错误',
-              message: '评论发布失败',
+                  message: '发表评论时发生错误',
                   type: 'error',
                 });
               });
+        }
+      }
     },
     checkForAIComment() {
       let apiUrl = ''; // 定义一个变量来存储 API URL
@@ -506,16 +579,18 @@ export default {
 
       // 如果找到相应的@内容，调用API
       if (apiUrl) {
-        postApi.getAISuggestions({
-          postTitle: this.post.postTitle,
-          postContent: this.post.postContent
+        axios.get(apiUrl, {
+          params: {
+            postTitle: this.post.postTitle, // 帖子标题
+            postContent: this.post.postContent // 帖子内容
+          }
         })
             .then(response => {
               if (response.data) {
                 const aiComment = {
-                  commentID: -1,
+                  commentID: -1, // 可以在数据库插入后由后端返回实际ID
                   userID: userID,
-                  userName: userName,
+                  userName: userName, // 你可以根据需要自定义名字
                   postID: this.post.postID,
                   parentCommentID: -1,
                   commentTime: new Date().toISOString(),
@@ -523,11 +598,13 @@ export default {
                   content: response.data.message
                 };
 
-                commentApi.publishComment(aiComment)
+                // 向数据库插入AI评论
+                axios.post(`http://localhost:8080/api/Comment/PublishComment?token=${localStorage.getItem('token')}`, aiComment)
                     .then(dbResponse => {
                       if (dbResponse.data.message === '发布评论成功') {
+                        // 插入数据库成功后，将AI评论显示到前端
                         this.comments.push(aiComment);
-                        this.fetchComments(this.post.postID);
+                        this.fetchComments(this.post.postID); // 重新获取评论列表
                         ElNotification({
                           title: 'AI评论',
                           message: 'AI评论已生成并保存',

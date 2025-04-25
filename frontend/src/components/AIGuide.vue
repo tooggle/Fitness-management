@@ -248,6 +248,7 @@
   </div>
 </template>
 
+
 <script>
 import ElementPlus from 'element-plus'
 import axios from 'axios'
@@ -255,7 +256,6 @@ import MarkdownIt from 'markdown-it'
 import { ElNotification } from 'element-plus';
 const md = new MarkdownIt()
 import { Upload,ZoomIn,Delete,Camera,Picture,Clock  } from '@element-plus/icons-vue'
-import { aiGuideApi, userApi } from "../api/services";
 
 export default {
   name: 'FitnessGuide',
@@ -427,13 +427,15 @@ export default {
         return
       }
       console.log('开始分析')
+      const token = localStorage.getItem('token');
       const requestData = {
         exerciseName: this.screenshotsCurrent.exerciseName,
         screenshotUrl: this.screenshotsCurrent.screenshotUrl
       }
+      // 生成随机的更新间隔，例如1到5秒之间
       let randomTimeout = Math.floor(Math.random() * 250) + 50
       this.refreshProgress(randomTimeout)
-      aiGuideApi.create(requestData)
+      axios.post(`http://localhost:8080/api/AIGuide/Create?token=${token}`, requestData)
         .then(response => {
           this.screenshotsCurrent.screenshotID = response.data.screenshotID
           this.screenshotsCurrent.createTime = new Date(response.data.createTime)
@@ -444,11 +446,40 @@ export default {
           console.error('创建失败：', error)
         })
     },
+    // getAISuggestions(screenshotID) {
+    //   console.log('获取AI建议:', screenshotID)
+    //   axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
+    //     params: {
+    //       screenshotID: screenshotID
+    //     }
+    //   })
+    //     .then(response => {
+    //       this.markdownText = response.data.message
+    //       this.analysisPercentage = 100
+    //       this.successAnalyze = true
+    //       this.analysisStatue = 0
+    //       console.log('AI建议:', response.data)
+    //       this.screenshotsCurrent.AIsuggestion = response.data.message
+    //       const screenshot = {
+    //         exerciseName: this.screenshotsCurrent.exerciseName,
+    //         screenshotID: this.screenshotsCurrent.screenshotID,
+    //         screenshotUrl: this.screenshotsCurrent.screenshotUrl,
+    //         AIsuggestion: this.screenshotsCurrent.AIsuggestion,
+    //         createTime: this.screenshotsCurrent.createTime
+    //       }
+    //       console.log('imgUrl:', this.screenshotsCurrent.screenshotUrl)
+    //       this.uploadedScreenshots.push(screenshot)
+    //       this.getVigorTokenBalance()
+    //     })
+    //     .catch(error => {
+    //       console.error('Error getting AI suggestions:', error)
+    //     })
+    // },
     getAISuggestions(screenshotID) {
       console.log('获取AI建议:', screenshotID);
       let attempts = 0;
       const maxAttempts = 15;
-      const interval = 1000;
+      const interval = 1000; // 1秒
 
       const poll = () => {
         if (attempts >= maxAttempts) {
@@ -456,7 +487,11 @@ export default {
           return;
         }
 
-        aiGuideApi.getAISuggestion(screenshotID)
+        axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
+          params: {
+            screenshotID: screenshotID
+          }
+        })
           .then(response => {
             if (response.data.message !== "") {
               console.log('AI建议:', response.data.message)
@@ -477,7 +512,7 @@ export default {
               this.uploadedScreenshots.push(screenshot);
               this.getVigorTokenBalance();
               this.screenshotsCurrent.exerciseName = "";
-              clearInterval(pollingInterval);
+              clearInterval(pollingInterval); // 停止轮询
             } else {
               attempts++;
             }
@@ -491,7 +526,8 @@ export default {
       const pollingInterval = setInterval(poll, interval);
     },
     getScreenshotFromDB() {
-      aiGuideApi.getAllDetails()
+      const token = localStorage.getItem('token');
+      axios.get(`http://localhost:8080/api/AIGuide/GetAllDetails?token=${token}`)
         .then(response => {
           console.log(response.data.suggestions)
           response.data.suggestions.forEach(item => {
@@ -507,9 +543,16 @@ export default {
         })
     },
     deleteScreenshot(screenshot) {
-      aiGuideApi.delete(screenshot.screenshotID)
+      // 查找并删除匹配项
+      axios.delete(`http://localhost:8080/api/AIGuide/Delete`, {
+        params: {
+          screenshotID: screenshot.screenshotID
+        }
+      })
         .then(response => {
           console.log(response.data.message)
+
+          // 从列表中移除该项
           this.uploadedScreenshots = this.uploadedScreenshots.filter(item => item !== screenshot)
           ElNotification({
           title: '提示',
@@ -527,7 +570,11 @@ export default {
     },
     // 获取活力币余额
     getVigorTokenBalance() {
-      userApi.getVigorTokenBalance()
+      const token = localStorage.getItem('token');
+      axios.get(`http://localhost:8080/api/User/GetVigorTokenBalance?token=${token}`,
+          {params:{
+            userID:-1
+            }})
         .then(response => {
           this.vigorTokenBalance = response.data.balance;
           })
@@ -698,7 +745,7 @@ export default {
 .container {
   background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("../assets/images/bg5.jpg") no-repeat center;
   background-size: cover;
-  width: 100vw;
+  width: 200vw;
   margin-top: 3%;
   height: 85vh;
   position: relative;
