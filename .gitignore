@@ -5,5 +5,5 @@
 *.tmp
 *.swp
 .idea/
-/backEnd/target
-/frontend/node_modules
+/backEnd/target/
+/frontend/node_modules/
