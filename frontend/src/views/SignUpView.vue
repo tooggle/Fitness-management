@@ -2,14 +2,13 @@
     <div class="background">
         <div class="background-image"></div>
         <div class="login-container">
-            <div class="gradient-background"></div>
             <div class="content">
                 <div class="title-img"></div>
                 <el-card class="login-card">
                     <h2 class="login-title">用户注册</h2>
                     <el-form :model="SignUpForm" :rules="rules" label-position="left" label-width="80px">
                         <el-form-item label="用户昵称" prop="name">
-                            <el-input v-model="SignUpForm.name"></el-input>
+                            <el-input v-model="SignUpForm.name" />
                         </el-form-item>
                         <el-form-item label="用户类型" prop="userType">
                             <el-radio-group v-model="SignUpForm.userType">
@@ -18,34 +17,27 @@
                             </el-radio-group>
                         </el-form-item>
                         <el-form-item label="密码" prop="password">
-                            <el-input v-model="SignUpForm.password" show-password></el-input>
+                            <el-input v-model="SignUpForm.password" type="password" show-password />
                         </el-form-item>
                         <el-form-item label="确认密码" prop="verifyPwd">
-                            <el-input v-model="SignUpForm.verifyPwd" show-password></el-input>
+                            <el-input v-model="SignUpForm.verifyPwd" type="password" show-password />
                         </el-form-item>
                         <el-form-item label="邮箱" prop="email">
-                            <el-input v-model="SignUpForm.email"></el-input>
+                            <el-input v-model="SignUpForm.email" />
                         </el-form-item>
-                        <el-form-item label="验证码" prop="verifyCode">
-                            <el-row gutter="20">
-                                <el-col :span="12">
-                                    <el-input v-model="SignUpForm.verifyCode"></el-input>
-                                </el-col>
-                                <el-col :span="10">
-                                    <div class="code-button-container">
-                                        <el-button v-show="codeShow" type="primary" class="code-button"
-                                            @click="sendVerifyCode">获取验证码</el-button>
-                                        <el-button v-show="!codeShow" disabled="disabled" class="code-button">{{ count
-                                            }}s</el-button>
-                                    </div>
-                                </el-col>
-                            </el-row>
-                        </el-form-item>
+                        <el-row justify="center">
+                            <el-col>
+                                <el-form-item>
+                                    <el-button type="primary" class="login-button" @click="SignUp">完成注册</el-button>
+                                </el-form-item>
+                            </el-col>
+                        </el-row>
+                        <el-row justify="end">
+                            <el-col :span="10">
+                                <el-link type="primary" @click="returnLoginView">已有账号？返回登录</el-link>
+                            </el-col>
+                        </el-row>
                     </el-form>
-                    <el-form-item>
-                        <el-button type="primary" class="return-button" @click="returnLoginView">返回</el-button>
-                        <el-button type="primary" class="login-button" @click="SignUp">完成注册</el-button>
-                    </el-form-item>
                 </el-card>
             </div>
         </div>
@@ -64,7 +56,6 @@ export default {
                 password: '',
                 verifyPwd: '',
                 email: '',
-                verifyCode: '',
                 userType: 'user',
             },
             rules: {
@@ -99,10 +90,6 @@ export default {
                         }
                     }
                 ],
-                verifyCode: [
-                    { required: true, message: '请输入验证码', trigger: 'blur' },
-                    { min: 6, max: 6, message: '验证码长度为6位', trigger: 'blur' },
-                ],
                 name: [
                     { required: true, message: '请输入昵称', trigger: 'blur' },
                     { min: 0, max: 20, message: '昵称过长', trigger: 'blur' },
@@ -111,41 +98,10 @@ export default {
                     { required: true, message: '请选择用户类型', trigger: 'change' }
                 ],
             },
-            count: 60,
-            timer: null,
-            codeShow: true,
         }
     },
 
     methods: {
-        sendVerifyCode() {
-            const TIME_LIMIT = 60;
-            const email = this.SignUpForm.email;
-            axios.post(`http://localhost:8080/api/User/SendVerificationCode?email=${email}`).then(res => {
-                console.log(res.data.message);
-                if (!this.timer) {
-                    this.count = TIME_LIMIT;
-                    this.codeShow = false;
-                    this.timer = setInterval(() => {
-                        if (this.count > 0) {
-                            this.count--;
-                        } else {
-                            this.codeShow = true;
-                            clearInterval(this.timer);
-                            this.timer = null;
-                        }
-                    }, 1000);
-                }
-            }).catch(error => {
-                console.error('Error sending verification code:', error);
-                ElNotification({
-                    message: '验证码发送失败，请稍后再试',
-                    type: 'error',
-                    duration: 2000
-                });
-            });
-        },
-
         async SignUp() {
             try {
                 const requestData = {
@@ -154,7 +110,6 @@ export default {
                     accountName: this.SignUpForm.name,
                     role: this.SignUpForm.userType === 'user' ? 'user' : 'coach',
                     coachName: this.SignUpForm.name,
-                    verificationCode: this.SignUpForm.verifyCode
                 };
 
                 console.log(requestData);
@@ -168,20 +123,12 @@ export default {
                         duration: 2000
                     });
                     this.$router.push({ name: 'LoginView' });
-                } else if (response.data.message === "验证码错误或已过期") {
-                    ElNotification({
-                        message: "注册失败：验证码错误或已过期",
-                        type: 'error',
-                        duration: 2000
-                    });
-                    this.resetForm();
                 } else if (response.data.message === "注册失败：邮箱已存在") {
                     ElNotification({
                         message: "注册失败：邮箱已存在，请重新填写",
                         type: 'error',
                         duration: 2000
                     });
-                    this.resetForm();
                 }
 
             } catch (error) {
@@ -194,12 +141,8 @@ export default {
             }
         },
 
-        resetForm() {
-            this.$refs['SignUpForm'].resetFields();
-        },
-
         returnLoginView() {
-            this.$router.go(-1);
+            this.$router.push({ name: 'LoginView' });
         },
     }
 }
@@ -207,98 +150,195 @@ export default {
 
 <style scoped>
 .background {
-    display: flex;
-    width: 100%;
-    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
 }
 
 .background-image {
-    background-image: url('../assets/images/background.jpg');
-    background-size: cover;
-    background-position: center;
-    width: 70%;
-    height: 100%;
-}
-
-.title-img {
-    background-image: url('../assets/images/login_signup.jpg');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 9;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: cover;
+    z-index: -1;
 }
 
 .login-container {
-    width: 40%;
-    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
-    justify-content: center;
     align-items: center;
-    background-color: white;
+    justify-content: center;
 }
 
 .content {
-    width: 80%;
-    border-radius: 8px;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+    transform: translateY(-2%);
+    position: relative;
+    z-index: 1;
 }
 
-.title {
-    margin-top: 20px;
+.title-img {
+    height: 70px;
     margin-bottom: 20px;
-    text-align: center;
-    font-size: 3.5rem;
-    font-weight: bold;
-    font-family: 'PingFang SC', sans-serif;
-    color: rgb(44, 225, 44);
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNDAgNjAiPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtd2VpZ2h0PSI3MDAiIGZvbnQtc2l6ZT0iMjgiIGZpbGw9IiNmZmYiPkZpdG5lc3MgU3lzdGVtPC90ZXh0Pjwvc3ZnPg==');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
 }
 
 .login-card {
-    border: none;
-    box-shadow: none;
-    padding: 20px;
-    border-radius: 30px;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    overflow: visible;
+    transition: all 0.3s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+}
+
+.login-card ::v-deep .el-card__body {
+    padding: 2rem;
 }
 
 .login-title {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 1.5rem;
     color: #333;
+    font-size: 1.8rem;
+    font-weight: 600;
 }
 
-.tabs {
-    margin-top: 20px;
+.el-form-item {
+    margin-bottom: 1.5rem !important;
+    width: 100%;
 }
 
-.code-button-container {
-    width: 100px;
-    /* 确保容器宽度与父元素一致 */
-    display: flex;
-    justify-content: center;
+.el-input {
+    display: block;
+    width: 100%;
 }
 
-.code-button {
-    width: 100px;
-    /* 确保按钮宽度与容器一致 */
+/* 重新添加输入框样式但避免嵌套问题 */
+:deep(.el-input__inner) {
+    height: 42px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    transition: all 0.3s;
+    padding: 0 15px;
+    background-color: #fff;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.return-button {
-    width: 16%;
-    background-color: #409EFF;
-    margin-left: 0;
-    margin-right: 5px;
+:deep(.el-input__inner:focus) {
+    border-color: #764ba2;
+    box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.2);
+}
+
+:deep(.el-input__suffix) {
+    right: 10px;
 }
 
 .login-button {
-    width: 79%;
-    background-color: #409EFF;
-    color: #fff;
-    border-radius: 5px;
-    margin-right: 0;
+    width: 100%;
+    height: 42px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    background: linear-gradient(to right, #667eea, #764ba2);
+    border: none;
+    color: white;
+    transition: all 0.3s;
 }
 
 .login-button:hover {
-    background-color: #66b1ff;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+    opacity: 0.9;
+}
+
+.login-button:active {
+    transform: translateY(0);
+}
+
+.el-link {
+    font-size: 0.9rem;
+    color: #764ba2 !important;
+    transition: all 0.2s;
+}
+
+.el-link:hover {
+    text-decoration: underline;
+    color: #667eea !important;
+}
+
+.el-radio ::v-deep .el-radio__input.is-checked .el-radio__inner {
+    background-color: #764ba2;
+    border-color: #764ba2;
+}
+
+.el-radio ::v-deep .el-radio__input.is-checked + .el-radio__label {
+    color: #764ba2;
+}
+
+.el-radio ::v-deep .el-radio__inner {
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.el-form ::v-deep .el-form-item__label {
+    font-size: 0.95rem;
+    color: #333;
+    line-height: 1.4;
+    padding-bottom: 6px;
+}
+
+.el-form ::v-deep .el-form-item__content {
+    line-height: 1.4;
+    display: block;
+    width: 100%;
+    position: relative;
+}
+
+.el-radio-group {
+    display: flex;
+    gap: 16px;
+}
+
+@media (max-width: 480px) {
+    .content {
+        padding: 1rem;
+        max-width: 100%;
+    }
+    
+    .login-card ::v-deep .el-card__body {
+        padding: 1.5rem;
+    }
+    
+    .login-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    :deep(.el-input__inner) {
+        height: 38px;
+        font-size: 0.9rem;
+    }
 }
 </style>
