@@ -2,14 +2,16 @@ package org.fm.backend.service;
 
 import org.fm.backend.dao.CoachMapper;
 import org.fm.backend.dao.UserMapper;
-import org.fm.backend.dto.LoginInfo;
-import org.fm.backend.dto.LoginToken;
-import org.fm.backend.dto.ResultMessage;
+import org.fm.backend.dao.VigorTokenMapper;
+import org.fm.backend.dto.*;
+import org.fm.backend.model.Coach;
+import org.fm.backend.model.User;
 import org.fm.backend.util.JWTHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Objects;
 
 @Service
 public class UserService {
@@ -22,14 +24,24 @@ public class UserService {
     @Autowired
     private JWTHelper jwtHelper;
 
+    @Autowired
+    private VigorTokenService vigorTokenService;
+
+    @Autowired
+    private VigorTokenMapper vigorTokenMapper;
+
     public LoginToken login(String email, String password, String role) {
         if(!userMapper.isUserEmailExist(email)) {
             return new LoginToken("InvalidToken", "邮箱不存在或错误");
         }
         LoginInfo loginInfo = userMapper.getLoginInfoByEmail(email);
         int userID = loginInfo.getUserID();
+        if(!loginInfo.getPassword().equals(password)){
+            return new LoginToken("InvalidToken", "密码错误");
+        }
+        //这里只判断role是user还是admin
         LoginToken res = new LoginToken(jwtHelper.generateToken(userID,role),"登录成功");
-        boolean isAdmin = userMapper.isEmailInManager(email);
+        Boolean isAdmin = userMapper.isEmailInManager(email);
         if (role.equals("admin") && !isAdmin) {
             return new LoginToken("Invalid", "身份权限不符");
         }
@@ -37,6 +49,44 @@ public class UserService {
         if(role.equals("coach") && !isCoach) {
             return new LoginToken("Invalid", "身份权限不符");
         }
+        userMapper.updateUserLoginTime(userID, new Date());
+        vigorTokenService.updateBalance(userID,"登录系统，获得10活力币",10);
+        System.out.println(res);
         return  res;
+    }
+
+    public ResultMessage register(RegisterInfo registerInfo){
+        if(userMapper.isUserEmailExist(registerInfo.email)) {
+            return new ResultMessage("注册失败：邮箱已存在");
+        }
+        User user = new User();
+        user.setEmail(registerInfo.email);
+        user.setPassword(registerInfo.password);
+        user.setRole(registerInfo.role);
+        user.setUserName(registerInfo.accountName);
+        user.setRegistrationTime(new Date());
+        user.setIsMember(1);
+        user.setIsPost(1);
+        userMapper.insertUser(user);
+        int userID = user.getUserID();
+        if(registerInfo.role == "coach"){
+            Coach coach = new Coach();
+            coach.setCoachID(userID);
+            coach.setUserName(registerInfo.accountName);
+            coach.setIsMember(1);
+            coach.setCoachName(registerInfo.coachName);
+            coachMapper.insert(coach);
+        }
+        vigorTokenMapper.setVigorTokenBalance(userID,0);
+        vigorTokenService.updateBalance(userID,"注册成功，获取10000活力币",10000);
+        //成就系统初始化 to do
+
+
+        return new ResultMessage("成功注册");
+    }
+
+    public User getProfile(String token) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        return userMapper.getUserByUserId(tokenValidationResult.userID);
     }
 }

@@ -11,10 +11,10 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper {
-    @Select("SELECT * FROM User WHERE email = #{email}")
-    boolean isUserEmailExist(String email);
+    @Select("SELECT IFNULL(COUNT(*) > 0, false) FROM User WHERE email = #{email}")
+    boolean isUserEmailExist(@Param("email") String email);
 
-    @Select("SELECT * FROM Manager WHERE email = #{email}")
+    @Select("SELECT IFNULL(COUNT(*) > 0, false) FROM Manager WHERE email = #{email}")
     boolean isEmailInManager(String email);
 
     @Select("SELECT password FROM User WHERE email = #{email}")
