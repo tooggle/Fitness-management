@@ -35,4 +35,14 @@ public class UserController {
         return userService.getProfile(token);
     }
 
+    @GetMapping("/GetTokenInvalidateRes")
+    public boolean getTokenInvalidateRes(String token){
+        return jwtHelper.validateToken(token).IsValid;
+    }
+
+    @GetMapping("/GetProfile")
+    public User getProfile(String token,int userID){
+        return userService.getProfile(token);
+    }
+
 }
