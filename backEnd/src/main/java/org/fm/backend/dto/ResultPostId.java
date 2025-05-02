@@ -1,0 +1,17 @@
+package org.fm.backend.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ResultPostId {
+    public String postID;
+    public String message;
+    public boolean Success;
+
+}
