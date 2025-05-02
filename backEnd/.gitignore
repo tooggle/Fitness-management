@@ -44,4 +44,7 @@ out
 gen
 !/src/main/resources/application.properties
 
+# 忽略 package-lock.json
 package-lock.json
+
+frontend/
