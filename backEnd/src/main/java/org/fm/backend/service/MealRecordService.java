@@ -30,7 +30,9 @@ public class MealRecordService {
         mealRecords.setMealTime(createMealRecord.getMealTime());
         mealRecords.setCreateTime(new Date());
 
-        // 处理Base64图片字符串
+        mealRecords.setMealPhoto(createMealRecord.getMealPhoto());
+
+        /*// 处理Base64图片字符串
         String originalPhoto = createMealRecord.getMealPhoto();
         if (originalPhoto != null && originalPhoto.contains("base64,")) {
             // 截取base64,之后的部分
@@ -39,7 +41,7 @@ public class MealRecordService {
         } else {
             // 如果不是Base64格式或为null，保持原样或设为null
             mealRecords.setMealPhoto(originalPhoto);
-        }
+        }*/
 
         // 插入 MealRecords 并获取生成的 ID
         int affectedRows = mealRecordMapper.insertMealRecord(mealRecords);
@@ -136,12 +138,12 @@ public class MealRecordService {
         Date mealTime = updateMealRecordInfo.getMealTime();
         String mealPhoto = updateMealRecordInfo.getMealPhoto();
 
-        // 处理Base64图片字符串
+/*        // 处理Base64图片字符串
         if (mealPhoto != null && mealPhoto.contains("base64,")) {
             // 截取base64,之后的部分
             String base64Data = mealPhoto.substring(mealPhoto.indexOf("base64,") + 7);
             mealPhoto = base64Data;
-        }
+        }*/
 
         try {// 更新 MealRecords 表
             MealRecords mealRecords = new MealRecords();

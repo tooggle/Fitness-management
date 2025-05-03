@@ -13,7 +13,7 @@ public class FoodPlan {
     private int mealType;
     private boolean state;
     private int numsOfTypes;
-    private int achievementGain;
+    private int achievementGain = 0;
 
     public Date getDate() {
         return date;

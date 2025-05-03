@@ -60,4 +60,11 @@ public class MealRecordController {
     public AIRes aISuggestions(@RequestParam int recordID){
         return new AIRes();
     }
+
+    @GetMapping("/GetAISummary")
+    public ResultMessage getAISummary(@RequestParam String token,
+                              @RequestParam  @DateTimeFormat(pattern = "yyyy-MM-dd") Date date
+                              ){
+        return new ResultMessage();
+    }
 }
