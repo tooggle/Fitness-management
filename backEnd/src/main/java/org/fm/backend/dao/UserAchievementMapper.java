@@ -1,9 +1,6 @@
 package org.fm.backend.dao;
 
-import org.apache.ibatis.annotations.Insert;
-import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.*;
 import org.fm.backend.model.UserAchievement;
 
 import java.util.List;
@@ -29,6 +26,20 @@ public interface UserAchievementMapper {
             @Param("userId") int userId,
             @Param("achievementId") int achievementId);
 
+    // 获取成就的目标值
+    @Select("SELECT target FROM Achievement " +
+            "WHERE achievementID = #{achievementId}")
+    int getAchievementTarget(@Param("achievementId") int achievementId);
+
+    // 更新用户的成就进度和达成状态
+    @Update("UPDATE UserAchievement SET progress = #{progress}, isAchieved = #{isAchieved}, " +
+            "achievedDate = CASE WHEN #{isAchieved} = TRUE THEN NOW() ELSE achievedDate END " +
+            "WHERE userID = #{userId} AND achievementID = #{achievementId}")
+    void update(
+            @Param("userId") int userId,
+            @Param("achievementId") int achievementId,
+            @Param("progress") int progress,
+            @Param("isAchieved") boolean isAchieved);
 
 }
 

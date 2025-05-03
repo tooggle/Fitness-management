@@ -43,7 +43,12 @@ public interface PostMapper {
     @Update("UPDATE posts SET isPinned = 0 WHERE postID = #{postID}")
     int cancelPinPost(@Param("postID") Integer postID);
 
-    @Update("UPDATE Posts SET forwardCount = forwardCount + 1 WHERE postID = #{postID}")
+    @Update("UPDATE posts SET forwardCount = forwardCount + 1 WHERE postID = #{postID}")
     int updateForwardCount(@Param("postID") Integer postID);
 
+    @Update("UPDATE posts SET commentsCount = commentsCount + 1 WHERE postID = #{postID}")
+    void CommentsCountAddOne(@Param("postID") Integer postID);
+
+    @Update("UPDATE posts SET commentsCount = commentsCount - 1 WHERE postID = #{postID}")
+    void CommentsCountMinusOne(int postID);
 }
