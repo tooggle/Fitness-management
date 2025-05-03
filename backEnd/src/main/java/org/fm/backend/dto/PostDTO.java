@@ -2,7 +2,7 @@ package org.fm.backend.dto;
 
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @Builder
@@ -15,7 +15,7 @@ public class PostDTO {
     private String postTitle;
     private String postContent;
     private String postCategory;
-    private LocalDateTime postTime;
+    private Date postTime;
     private Integer likesCount;
     private Integer forwardCount;
     private Integer commentsCount;

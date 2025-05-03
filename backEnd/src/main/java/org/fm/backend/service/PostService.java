@@ -9,8 +9,8 @@ import org.fm.backend.util.JWTHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -47,7 +47,7 @@ public class PostService {
 
         // 3. 处理发布时间（如果客户端未提供）
         if (postDTO.getPostTime() == null) {
-            postDTO.setPostTime(LocalDateTime.now());
+            postDTO.setPostTime(new Date());
         }
 
         // 4. 保存帖子到数据库
