@@ -1,5 +1,8 @@
 package org.fm.backend.dto;
 
+import lombok.Data;
+
+@Data
 public class TokenValidationResult {
     public String Role ;
     public int userID ;
