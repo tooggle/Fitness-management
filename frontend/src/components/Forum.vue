@@ -204,6 +204,7 @@ export default {
       hotPosts: [],
       selectedCategory: "全部帖子",
       currentIndex: 0,
+      autoRefreshInterval: null,
     };
   },
   computed: {
@@ -215,9 +216,22 @@ export default {
     },
   },
   created() {
+    console.log("Forum组件创建");
     this.checkAvailable();
     this.fetchAllPosts();
     store.dispatch('pollIsPost');
+    
+    // 每30秒自动刷新帖子列表
+    this.autoRefreshInterval = setInterval(() => {
+      console.log("自动刷新帖子");
+      this.fetchAllPosts();
+    }, 30000);
+  },
+  beforeUnmount() {
+    // 组件销毁时清除定时器
+    if (this.autoRefreshInterval) {
+      clearInterval(this.autoRefreshInterval);
+    }
   },
   methods: {
     isAdmin(userName) {
@@ -268,14 +282,34 @@ export default {
       const token = localStorage.getItem('token');
       axios.get(`http://localhost:8080/api/Post/GetAllPost?token=${token}`)
           .then(response => {
+            console.log("后端返回所有帖子数据:", response.data);
+            // 先确保拿到的是有效数组
+            if (!Array.isArray(response.data)) {
+              console.error("API返回的数据不是数组:", response.data);
+              ElNotification({
+                title: '错误',
+                message: 'API返回数据格式不正确',
+                type: 'error',
+              });
+              return;
+            }
+            
+            // 输出每个帖子的字段，查看是否存在isReported字段
+            if (response.data.length > 0) {
+              console.log("第一个帖子的所有字段:", Object.keys(response.data[0]));
+            }
+            
+            // 不再依赖isReported字段进行过滤，直接使用所有帖子
             this.allPosts = response.data
-                .filter(post => post.isReported === 0) // 过滤掉被举报的帖子
                 .sort((a, b) => new Date(b.postTime) - new Date(a.postTime));
-            this.filteredPosts = this.allPosts;
+            
+            console.log("处理后的帖子数量:", this.allPosts.length);
+            this.filteredPosts = [...this.allPosts]; // 创建一个新数组
             this.updateHotPosts(); // 更新热帖
             this.updatePostsOrder(); // 更新帖子顺序
           })
           .catch(error => {
+            console.error("获取帖子时发生错误:", error);
             ElNotification({
               title: '错误',
               message: '获取帖子时发生错误，请稍后再试。',
@@ -287,14 +321,16 @@ export default {
     getAllPosts(token) {
       return axios.get(`http://localhost:8080/api/Post/GetAllPost?token=${token}`)
           .then(response => {
+            console.log("getAllPosts返回数据:", response.data);
+            // 直接使用所有帖子，按时间排序
             this.allPosts = response.data.sort((a, b) => new Date(b.postTime) - new Date(a.postTime));
-            this.filteredPosts = this.allPosts;
-            console.log(this.allPosts);
+            this.filteredPosts = [...this.allPosts]; // 创建一个新数组
             this.updateHotPosts();
             this.updatePostsOrder();
             return response;
           })
           .catch(error => {
+            console.error("获取所有帖子时发生错误:", error);
             ElNotification({
               title: '错误',
               message: '获取所有帖子时发生错误，请稍后再试。',
@@ -419,8 +455,10 @@ export default {
         };
         axios.post(`http://localhost:8080/api/Post/PublishPost?token=${token}`, newPost)
             .then(response => {
-              console.log(newPost);
+              console.log("发布帖子响应:", response.data);
               newPost.postID = response.data.postID;
+              
+              // 将新帖子添加到数组开头
               this.allPosts.unshift(newPost);
               this.filterPosts();
               this.updateHotPosts();
@@ -431,6 +469,11 @@ export default {
                 message: '帖子发布成功！',
                 type: 'success',
               });
+              
+              // 重新获取所有帖子，确保列表被刷新
+              setTimeout(() => {
+                this.fetchAllPosts();
+              }, 1000);
             })
             .catch(error => {
               ElNotification({
@@ -481,6 +524,24 @@ export default {
 
     truncatedContent(content) {
       return content.length > 30 ? content.slice(0, 30) + '...' : content;
+    },
+
+    viewPost(postID) {
+      console.log("点击查看帖子:", postID);
+      
+      // 验证postID是否有效
+      if (!postID) {
+        console.error("无效的帖子ID");
+        ElNotification({
+          title: '错误',
+          message: '无效的帖子ID',
+          type: 'error',
+        });
+        return;
+      }
+      
+      // 使用编程式导航跳转到帖子详情页
+      this.$router.push(`/post/${postID}`);
     },
   },
 };

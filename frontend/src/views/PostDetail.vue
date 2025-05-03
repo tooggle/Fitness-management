@@ -169,7 +169,7 @@
 
 <script>
 import axios from 'axios';
-import { ElNotification } from 'element-plus';
+import { ElNotification, ElMessageBox } from 'element-plus';
 import { IconArrowLeft, IconFire, IconLink } from '@arco-design/web-vue/es/icon';
 import { EmojiButton } from '@joeattardi/emoji-button';
 import store from '../store/index.js';
@@ -279,7 +279,8 @@ export default {
                 message: '帖子删除成功',
                 type: 'success',
               });
-              this.$router.push('/forum'); // 删除后跳转回论坛首页
+              // 修改为使用location.href强制刷新页面
+              window.location.href = '/#/forum';
             } else {
               ElNotification({
                 title: '错误',
@@ -429,7 +430,8 @@ export default {
       this.$router.go(-1);
     },
     goBackToHome() {
-      this.$router.push('/forum');
+      // 修改为使用location.href强制刷新页面
+      window.location.href = '/#/forum';
     },
     toggleLike(postID) {
       const token = localStorage.getItem('token');
@@ -529,6 +531,7 @@ export default {
           // 处理一级评论发布的情况
           axios.post(`http://localhost:8080/api/Comment/PublishComment?token=${token}`, newComment)
               .then(response => {
+                console.log("发布评论响应:", response.data);
                 if (response.data.message === '发布评论成功') {
                   this.checkForAIComment(); // 检查并获取AI评论
                   this.newCommentText = ""; // 清空输入框
@@ -537,7 +540,24 @@ export default {
                     message: '评论发布成功',
                     type: 'success',
                   });
-                  this.fetchComments(this.post.postID); // 重新获取评论列表
+                  
+                  // 更新帖子的评论计数
+                  this.post.commentsCount = (this.post.commentsCount || 0) + 1;
+                  
+                  // 重新获取评论列表
+                  this.fetchComments(this.post.postID);
+                  
+                  // 询问用户是否返回论坛首页
+                  ElMessageBox.confirm('评论发布成功，是否返回论坛首页查看最新内容?', '提示', {
+                    confirmButtonText: '返回首页',
+                    cancelButtonText: '留在当前页',
+                    type: 'info'
+                  }).then(() => {
+                    // 用户选择返回首页
+                    window.location.href = '/#/forum';
+                  }).catch(() => {
+                    // 用户选择留在当前页，不做操作
+                  });
                 } else {
                   ElNotification({
                     title: '错误',
@@ -855,7 +875,8 @@ export default {
                 type: 'success',
               });
               this.post.isReported = 1; // 更新isReported标志位
-              this.$router.push('/forum'); // 跳转回论坛页面
+              // 使用location.href强制刷新论坛页面
+              window.location.href = '/#/forum';
             } else {
               ElNotification({
                 title: '错误',
