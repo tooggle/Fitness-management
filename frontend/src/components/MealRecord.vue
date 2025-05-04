@@ -817,7 +817,7 @@ export default {
     },
     // 删除计划函数
     deleteRecordInDB(/*userID,*/ recordID) {
-      axios.delete(`http://localhost:8080/api/Mealrecords/Delete`, {
+      axios.delete(`http://localhost:8080/api/MealRecords/Delete`, {
         params: {
           recordID: recordID
         }
