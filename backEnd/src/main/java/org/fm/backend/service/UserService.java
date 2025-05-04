@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -88,5 +89,76 @@ public class UserService {
     public User getProfile(String token) {
         TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
         return userMapper.getUserByUserId(tokenValidationResult.userID);
+    }
+
+    public String getName(int userID) {
+        return userMapper.getuserNameById(userID);
+    }
+
+    public String updateProfile(String token, ExpandUserInfo userinfo) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        int userID = tokenValidationResult.userID;
+        userMapper.updateExpandUserInfo(userID,userinfo);
+        return "更新成功";
+    }
+
+    public List<ExpandUserInfo> getProfileByName(String token, String username) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        return userMapper.getExpandUserInfoByUserName(username);
+    }
+
+    public List<BasicUserInfo> getAllUser(String token) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        return userMapper.getAllBasicUserInfo();
+    }
+
+    public ExpandUserInfo getProfileByUserID(String token, int userID) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        User user = userMapper.getUserByUserId(userID);
+        ExpandUserInfo expandUserInfo = new ExpandUserInfo();
+        expandUserInfo.setUserID(userID);
+        expandUserInfo.setUserName(user.getUserName());
+        expandUserInfo.setIconURL(user.getIconURL());
+        expandUserInfo.setAge(user.getAge());
+        expandUserInfo.setGender(user.getGender());
+        expandUserInfo.setTags(user.getTags());
+        expandUserInfo.setIntroduction(user.getIntroduction());
+        expandUserInfo.setIsMember(user.getIsMember());
+        expandUserInfo.setGoalType(user.getGoalType());
+        expandUserInfo.setGoalWeight(user.getGoalWeight());
+        return expandUserInfo;
+    }
+
+    public String removeUser(String token, int userID) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        if(Objects.equals(tokenValidationResult.Role, "admin")) {
+            userMapper.setUserIsDelete(userID,1);
+            return "删除成功";
+        }
+        else {
+            return "身份权限不符";
+        }
+    }
+
+    public String banPost(String token, int userID) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        if(Objects.equals(tokenValidationResult.Role, "admin")) {
+            userMapper.setUserIsPost(userID,0);
+            return "禁言成功";
+        }
+        else {
+            return "身份权限不符";
+        }
+    }
+
+    public String cancelBanUser(String token, int userID) {
+        TokenValidationResult tokenValidationResult = jwtHelper.validateToken(token);
+        if(Objects.equals(tokenValidationResult.Role, "admin")) {
+            userMapper.setUserIsPost(userID,1);
+            return "取消禁言成功";
+        }
+        else {
+            return "身份权限不符";
+        }
     }
 }

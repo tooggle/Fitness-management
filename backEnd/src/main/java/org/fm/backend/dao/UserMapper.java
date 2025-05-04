@@ -49,13 +49,12 @@ public interface UserMapper {
     @Options(useGeneratedKeys = true, keyProperty = "userID", keyColumn = "userID")
     boolean insertUser(User user);
 
-    @Update({"UPDATE User SET userName = #{expandInfo.userName}, iconURL = #{iconUrl}, age = #{expandInfo.age}, " +
+    @Update({"UPDATE User SET userName = #{expandInfo.userName}, iconURL = #{expandInfo.iconURL}, age = #{expandInfo.age}, " +
             "gender = #{expandInfo.gender}, Introduction = #{expandInfo.introduction}, isMember = #{expandInfo.isMember}, " +
             "goalType = #{expandInfo.goalType}, Tags = #{expandInfo.tags}, goalWeight = #{expandInfo.goalWeight} " +
             "WHERE userID = #{userID}"})
     boolean updateExpandUserInfo(@Param("userID") int userID,
-                                 @Param("expandInfo") ExpandUserInfo expandInfo,
-                                 @Param("iconUrl") String iconUrl);
+                                 @Param("expandInfo") ExpandUserInfo expandInfo);
 
     @Update("UPDATE User SET isDelete = #{isDelete} WHERE userID = #{userID}")
     boolean setUserIsDelete(@Param("userID") int userID, @Param("isDelete") int isDelete);
