@@ -126,5 +126,9 @@ public class MealRecordController {
             this.success = success;
             this.suggestion = suggestion;
         }
+
+        public static AIResBuilder builder() {
+            return new AIResBuilder();
+        }
     }
 }
