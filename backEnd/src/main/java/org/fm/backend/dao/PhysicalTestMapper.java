@@ -18,7 +18,7 @@ public interface PhysicalTestMapper {
             "long_distance = #{longDistance} " +
             "WHERE userID = #{userID}")
     int updatePhysicalTest(
-            @Param("userId") int userID,
+            @Param("userID") int userID,
             @Param("pushups") Integer pushups,
             @Param("squats") Integer squats,
             @Param("situps") Integer situps,
