@@ -10,12 +10,26 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResultMessage {
-    public String message;
+    private int code;
+    private String message;
+    private Object data;
 
-    @Override
-    public String toString() {
-        return "ResultMessage{" +
-                "message='" + message + '\'' +
-                '}';
+    public static class ResultMessageBuilder {
+        private int code;
+        private String message;
+        private Object data;
+
+        public ResultMessageBuilder code(int code) {
+            this.code = code;
+            return this;
+        }
+
+        public ResultMessage build() {
+            ResultMessage resultMessage = new ResultMessage();
+            resultMessage.code = this.code;
+            resultMessage.message = this.message;
+            resultMessage.data = this.data;
+            return resultMessage;
+        }
     }
 }
