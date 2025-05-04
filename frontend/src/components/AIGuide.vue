@@ -256,13 +256,6 @@ import MarkdownIt from 'markdown-it'
 import { ElNotification } from 'element-plus';
 const md = new MarkdownIt()
 import { Upload,ZoomIn,Delete,Camera,Picture,Clock  } from '@element-plus/icons-vue'
-import { Configuration, OpenAIApi } from "openai";
-
-const configuration = new Configuration({
-  apiKey: process.env.VUE_APP_OPENAI_API_KEY
-});
-const openai = new OpenAIApi(configuration);
-
 
 export default {
   name: 'FitnessGuide',
@@ -402,7 +395,7 @@ export default {
         })
       })
     },
-    // 上传图片
+    // 上传图片并调用后端 AI 分析
     async uploadImg() {
       if (this.vigorTokenBalance < 50) {
         ElNotification({
@@ -410,76 +403,73 @@ export default {
           message: `本功能需要耗费50活力币，您的余额为${this.vigorTokenBalance}，余额不足!`,
           type: 'warning',
           duration: 2000
-        })
-        return
+        });
+        return;
+      } else {
+        ElNotification({
+          title: '提示',
+          message: `本次消费50活力币，您的余额为${this.vigorTokenBalance - 50}`,
+          type: 'success',
+          duration: 2000
+        });
+        this.vigorTokenBalance -= 50;
       }
 
-      this.vigorTokenBalance -= 50
-      ElNotification({
-        title: '注意',
-        message: `已扣除50活力币，当前余额${this.vigorTokenBalance}`,
-        type: 'success',
-        duration: 2000
-      })
-      this.isAnalyzing = true
-      this.analysisStatue = 1
-      this.analysisPercentage = 0
+      this.isAnalyzing = true;
+      this.analysisStatue = 1;
+      this.analysisPercentage = 0;
 
-      if (!this.screenshotsCurrent.screenshotUrl) {
+      if (!this.screenShotUrl) {
         ElNotification({
           title: '注意',
-          message: '请先上传图片或检查图片是否上传成功',
+          message: `请先上传图片或检查图片是否上传成功`,
           type: 'error',
           duration: 2000
-        })
-        this.isAnalyzing = false
-        return
+        });
+        this.isAnalyzing = false;
+        return;
       }
 
+      const randomTimeout = Math.floor(Math.random() * 250) + 50;
+      this.refreshProgress(randomTimeout);
+
       try {
-        console.log('开始创建后端记录并上传图片...')
-        const token = localStorage.getItem('token')
-        const requestData = {
-          exerciseName: this.screenshotsCurrent.exerciseName,
-          screenshotUrl: this.screenshotsCurrent.screenshotUrl
-        }
-
-        const randomTimeout = Math.floor(Math.random() * 250) + 50
-        this.refreshProgress(randomTimeout)
-
+        const token = localStorage.getItem('token');
         const createResp = await axios.post(
           `http://localhost:8080/api/AIGuide/Create?token=${token}`,
-          requestData
-        )
-        const { screenshotID, createTime, screenshotUrl } = createResp.data
+          {
+            exerciseName: this.screenshotsCurrent.exerciseName,
+            screenshotUrl: this.screenshotsCurrent.screenshotUrl
+          }
+        );
+        const { screenshotID, createTime, screenshotUrl } = createResp.data;
         this.screenshotsCurrent = {
           ...this.screenshotsCurrent,
           screenshotID,
           createTime: new Date(createTime),
           screenshotUrl
-        }
-        console.log('后端创建成功：', createResp.data.message)
+        };
 
-        console.log('开始调用 OpenAI 进行动作指导分析...')
         const aiMarkdown = await this.callAIAnalysis(
           this.screenshotsCurrent.screenshotUrl,
           this.screenshotsCurrent.exerciseName
-        )
-        this.markdownText = aiMarkdown;
-        this.analysisStatue = 0   // 成功
+        );
 
-      } catch (err) {
-        console.error('分析流程出错：', err)
-        this.analysisStatue = 2   // 失败
+        this.markdownText = aiMarkdown;
+        this.successAnalyze = true;
+        this.analysisStatue = 0; // 分析成功
+      } catch (error) {
+        console.error('AI 分析失败：', error);
+        this.analysisStatue = 2; // 分析失败
         ElNotification({
           title: '错误',
           message: '分析失败，请重试或联系管理员',
           type: 'error',
           duration: 3000
-        })
+        });
       } finally {
-        this.isAnalyzing = false
-        this.analysisPercentage = 100
+        this.isAnalyzing = false;
+        this.analysisPercentage = 100;
       }
     },
     // getAISuggestions(screenshotID) {
@@ -511,39 +501,6 @@ export default {
     //       console.error('Error getting AI suggestions:', error)
     //     })
     // },
-    /**
-   * 使用 OpenAI 对用户上传的截图进行健身动作分析
-   * @param {string} base64Img 图像 Base64 字符串
-   * @param {string} exerciseName 动作名称
-   */
-  async callAIAnalysis(base64Img, exerciseName) {
-    try {
-      // 构造 prompt
-      const prompt = `
-请扮演健身教练，根据以下信息给出专业的动作指导和纠正建议：
-- 动作名称：${exerciseName}
-- 图像（Base64 编码）：${base64Img}
-
-请输出要点清晰、要点分明的文本。
-      `.trim();
-
-      const response = await openai.createChatCompletion({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: "你是一名专业健身教练。" },
-          { role: "user", content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      });
-
-      const aiContent = response.data.choices[0].message.content;
-      return aiContent;
-    } catch (err) {
-      console.error("调用 AI 分析失败：", err);
-      throw err;
-    }
-  },
     getAISuggestions(screenshotID) {
       console.log('获取AI建议:', screenshotID);
       let attempts = 0;
