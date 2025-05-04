@@ -7,36 +7,34 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequestMapping("/api/ai")
 public class AiGuideController {
 
-    private final OpenAIUtil openAIUtil;
+    private final FitnessAIGuideService guideService;
 
-    public AiGuideController(OpenAIUtil openAIUtil) {
-        this.openAIUtil = openAIUtil;
+    public AiGuideController(FitnessAIGuideService guideService) {
+        this.guideService = guideService;
     }
 
-    // 根据 recordId 生成个性化健身建议
-    @GetMapping("/api/ai/guide")
-    public AIRes getAiGuide(@RequestParam("recordId") int recordId) {
-        String prompt = String.format("请根据健身记录 ID 为 %d 的用户，生成一段简短的个性化健身建议。", recordId);
-
+    @GetMapping("/guide")
+    public AIRes getAiGuide(@RequestParam("recordId") Long recordId) {
         try {
-            // 调用 OpenAI 接口，返回原始 JSON
-            String json = openAIUtil.getAISuggestion(prompt);
-
-            // json 是 {"choices":[{"message":{"content":"建议内容"}}], ...}
-            String content = extractContent(json);
-
+            String advice = guideService.generateAdvice(recordId);
             return AIRes.builder()
-                        .suggestion(content)
+                        .suggestion(advice)
                         .build();
-
+        } catch (IllegalArgumentException e) {
+            return AIRes.builder()
+                        .suggestion("无效的记录 ID：" + e.getMessage())
+                        .build();
         } catch (Exception e) {
             return AIRes.builder()
                         .suggestion("AI 服务调用失败：" + e.getMessage())
                         .build();
         }
     }
+}
+
 
     private String extractContent(String rawJson) {
         // 极简字符串查找，拿到第一个 "content":"...”
