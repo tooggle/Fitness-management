@@ -4,8 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.fm.backend.dto.*;
 import org.fm.backend.util.JWTHelper;
 import org.fm.backend.service.MealRecordService;
-import org.fm.backend.service.MealAIGuideService;
-import org.fm.backend.service.AISummaryService;
+import org.fm.backend.service.impl.MealAIGuideService;
+import org.fm.backend.service.impl.AISummaryService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
