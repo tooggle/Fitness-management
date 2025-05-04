@@ -4,8 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
+import java.util.Date;
 
 @Data
 @Builder
@@ -17,7 +16,7 @@ public class CommentDTO {
     private String userName;
     private Integer postID;
     private Integer parentCommentID;
-    private LocalDateTime commentTime;
+    private Date commentTime;
     private Integer likesCount;
     private String content;
 }

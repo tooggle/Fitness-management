@@ -12,9 +12,6 @@ import org.fm.backend.model.User;
 import org.fm.backend.util.JWTHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -47,7 +44,7 @@ public class CommentService {
 
         // 2. 设置默认值
         commentDTO.setLikesCount(0);
-        commentDTO.setCommentTime(LocalDateTime.now());
+        commentDTO.setCommentTime(new Date());
 
         // 3. 保存评论到数据库
         commentMapper.insertComment(commentDTO);
@@ -81,7 +78,7 @@ public class CommentService {
         // 2. 设置回复评论的默认值
         int senderId = validationResult.getUserID();
         replyComment.setUserID(senderId);
-        replyComment.setCommentTime(LocalDateTime.now());
+        replyComment.setCommentTime(new Date());
         replyComment.setLikesCount(0);
 
         // 3. 获取用户名

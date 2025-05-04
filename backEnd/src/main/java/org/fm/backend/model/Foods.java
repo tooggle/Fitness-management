@@ -1,5 +1,8 @@
 package org.fm.backend.model;
 
+import lombok.Data;
+
+@Data
 public class Foods {
     private String foodName ;
     private int calorie ;

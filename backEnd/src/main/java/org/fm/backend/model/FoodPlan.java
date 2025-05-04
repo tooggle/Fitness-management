@@ -1,7 +1,10 @@
 package org.fm.backend.model;
 
+import lombok.Data;
+
 import java.util.Date;
 
+@Data
 public class FoodPlan {
     private int foodPlanID;
     private int userID;
@@ -10,7 +13,7 @@ public class FoodPlan {
     private int mealType;
     private boolean state;
     private int numsOfTypes;
-    private int achievementGain;
+    private int achievementGain = 0;
 
     public Date getDate() {
         return date;
