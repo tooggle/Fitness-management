@@ -1,5 +1,6 @@
 package org.fm.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,5 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AIRes {
-    private  String diningAdvice;
+
+    @JsonProperty("suggestion")
+    private String suggestion;
+
 }
