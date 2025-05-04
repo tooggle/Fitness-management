@@ -200,7 +200,7 @@ export default {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => {
-                    this.imageUrl = reader.result;
+                this.imageUrl = reader.result;
                 this.recipe.imgUrl = this.imageUrl;
             };
             return false;
@@ -328,7 +328,7 @@ export default {
         // 更新食物信息
         UpdateRecipeToDB() {
             const requestData = {
-                recipeID: this.recipeID,
+                recipeID: this.currentRecipe.recipeID,
                 title: this.currentRecipe.title,
                 imgUrl: this.currentRecipe.imgUrl,
                 content: this.currentRecipe.content,
@@ -430,11 +430,13 @@ export default {
 }
 
 .posts-container {
-    height: 110px;
+    height: auto;
+    min-height: 110px;
 }
 
 .recipe-container {
     height: 200px;
+    margin-bottom: 15px;
 }
 
 .pagination-container {

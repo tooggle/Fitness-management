@@ -66,7 +66,7 @@ export default {
         },
         toggleReplies() {
             this.showReplies = !this.showReplies;
-            if (this.showReplies && this.comment.replies.length === 0) {
+            if (this.showReplies && (!this.comment.replies || this.comment.replies.length === 0)) {
                 this.$emit('fetch-replies', this.comment);
             }
         },
@@ -114,9 +114,17 @@ export default {
     color: #555;
 }
 
+.comment-actions span {
+    cursor: pointer;
+    padding: 3px 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
 .comment-actions span:hover {
     cursor: pointer;
-    background-color: #f0f0f0;
+    background-color: #e0e0e0;
+    color: #333;
 }
 
 .comment-time {
@@ -126,18 +134,25 @@ export default {
 }
 
 .btn-if-reply {
-    background-color: transparent;
-    color: black;
-    padding: 0 0;
-    border-radius: 10px;
+    background-color: #e8f4ff;
+    color: #0066cc;
+    padding: 3px 8px;
+    border-radius: 4px;
     cursor: pointer;
     font-size: 14px;
     border: none;
+    transition: background-color 0.3s;
+}
+
+.btn-if-reply:hover {
+    background-color: #cce4ff;
 }
 
 .comment-content-container {
   padding-left: 20px; /* 调整左边距 */
   margin-top: 10px;   /* 调整顶部间距 */
   line-height: 1.6;   /* 调整文本的行高 */
+  color: #333;        /* 添加深色字体颜色，使文本更清晰 */
+  font-weight: 500;   /* 增加字体粗细，提高可读性 */
 }
 </style>

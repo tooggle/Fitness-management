@@ -105,6 +105,7 @@
               <button @click="reportPost" class="btn-action">🚩 举报</button>
               <button @click="openShareDialog" class="btn-action">🔗 分享</button>
               <button @click="forwardPost" class="btn-action">🔄 转发</button>
+              <button class="btn-action">💬 评论 {{ post.commentsCount || 0 }}</button>
               <button v-if="isCurrentUser(post.userName)" @click="deletePost(post.postID)"
                       class="btn-action">🗑 删除</button>
 
@@ -318,6 +319,8 @@ export default {
     fetchPostDetail() {
       const token = localStorage.getItem('token');
       const postID = this.$route.params.postID;
+      console.log('获取帖子详情，帖子ID:', postID);
+      
       axios.get(`http://localhost:8080/api/Post/GetPostByPostID`, {
         params: {
           token: token,
@@ -325,21 +328,33 @@ export default {
         }
       })
           .then(response => {
-            console.log(response.data);
+            console.log('获取帖子详情响应:', response.data);
             this.post = response.data;
+            
+            // 确保commentsCount有一个合法的值
+            if (this.post.commentsCount === null || this.post.commentsCount === undefined) {
+              this.post.commentsCount = 0;
+            }
+            
+            console.log('帖子评论计数:', this.post.commentsCount);
+            
+            // 获取评论列表
             this.fetchComments(postID);
-            console.log("11",this.post.imgUrl);
+            console.log("帖子图片URL:", this.post.imgUrl);
           })
           .catch(error => {
+            console.error('获取帖子详情错误:', error);
             ElNotification({
               title: '错误',
-              message: '获取帖子详情时发生错误',
+              message: '获取帖子详情时发生错误: ' + (error.response?.data?.message || error.message || ''),
               type: 'error',
             });
           });
     },
     fetchComments(postID) {
       const token = localStorage.getItem('token');
+      console.log('获取帖子评论，帖子ID:', postID);
+      
       axios.get(`http://localhost:8080/api/Comment/GetCommentByPostID`, {
         params: {
           token: token,
@@ -347,6 +362,8 @@ export default {
         }
       })
           .then(response => {
+            console.log('获取评论响应:', response.data);
+            
             // 对评论数据按发表时间升序排列
             this.comments = response.data
                 .map(comment => {
@@ -359,9 +376,18 @@ export default {
                 })
                 .sort((a, b) => new Date(a.commentTime) - new Date(b.commentTime));  // 按发表时间升序排列
 
+            // 更新帖子评论计数
+            if (this.comments.length > 0) {
+              this.post.commentsCount = this.comments.length;
+              console.log('更新评论计数为:', this.comments.length);
+            }
+            
             this.hasCommentsNotification = false; // 重置标志位
           })
           .catch(error => {
+            console.error('获取评论错误:', error);
+            console.error('错误详情:', error.response?.data || error.message);
+            
             if (error.response && error.response.status === 404) {
               this.comments = []; // 评论列表为空
               if (!this.hasCommentsNotification) {  // 检查是否已经提示过
@@ -375,7 +401,7 @@ export default {
             } else {
               ElNotification({
                 title: '错误',
-                message: '获取评论时发生错误',
+                message: '获取评论时发生错误: ' + (error.response?.data?.message || error.message || ''),
                 type: 'error',
               });
             }
@@ -384,6 +410,8 @@ export default {
 
     async fetchReplies(comment) {
       const token = localStorage.getItem('token');
+      console.log('获取评论回复，评论ID:', comment.commentID);
+      
       try {
         const response = await axios.get(`http://localhost:8080/api/Comment/GetCommentByCommentID`, {
           params: {
@@ -391,29 +419,60 @@ export default {
             commentID: comment.commentID
           }
         });
-        const replies = response.data.filter(reply => reply.parentCommentID === comment.commentID).map(reply => {
-          return {
-            ...reply,
-            likedByCurrentUser: false,
-            replies: []
-          };
-        }).sort((a, b) => new Date(a.commentTime) - new Date(b.commentTime)); // 按时间排序
-        comment.replies = replies;
+        
+        console.log('获取回复响应:', response.data);
+        
+        // 过滤出真正的回复
+        const replies = response.data
+          .filter(reply => reply.parentCommentID === comment.commentID)
+          .map(reply => {
+            return {
+              ...reply,
+              likedByCurrentUser: false,
+              replies: []
+            };
+          })
+          .sort((a, b) => new Date(a.commentTime) - new Date(b.commentTime)); // 按时间排序
+        
+        console.log('过滤后的回复数量:', replies.length);
+        
+        // 找到原始评论对象
+        const originalComment = this.comments.find(c => c.commentID === comment.commentID);
+        if (originalComment) {
+          originalComment.replies = replies;
+          console.log('已更新评论回复列表');
+        } else {
+          console.error('未找到要更新回复的原始评论');
+        }
+        
+        return replies;
       } catch (error) {
+        console.error('获取回复错误:', error);
+        console.error('错误详情:', error.response?.data || error.message);
+        
         if (error.response && error.response.status === 404) {
           // 处理404错误，假设表示没有回复
+          console.log('该评论暂无回复 (404)');
           ElNotification({
             title: '提示',
             message: '该评论暂无回复',
             type: 'info',
           });
+          // 404错误时，设置空回复列表
+          const originalComment = this.comments.find(c => c.commentID === comment.commentID);
+          if (originalComment) {
+            originalComment.replies = [];
+          }
         } else {
           ElNotification({
             title: '错误',
-            message: '获取回复时发生错误',
+            message: '获取回复时发生错误: ' + (error.response?.data?.message || error.message || ''),
             type: 'error',
           });
         }
+        
+        // 出错时返回空数组
+        return [];
       }
     },
 
@@ -500,8 +559,12 @@ export default {
         };
 
         if (this.replyingTo) {
+          console.log('正在回复评论:', this.replyingTo);
+          console.log('发送的评论数据:', newComment);
+          
           axios.post(`http://localhost:8080/api/Comment/ReplyComment?token=${token}`, newComment)
               .then(response => {
+                console.log('回复评论响应:', response.data);
                 if (response.data.message === '回复成功') {
                   this.newCommentText = ""; // 清空输入框
                   ElNotification({
@@ -509,21 +572,53 @@ export default {
                     message: '回复成功',
                     type: 'success',
                   });
+                  
+                  // 更新帖子的评论计数
+                  this.post.commentsCount = (this.post.commentsCount || 0) + 1;
+                  console.log('更新后的评论计数:', this.post.commentsCount);
+                  
+                  // 保存当前的回复目标，因为接下来会清除它
+                  const replyToComment = {...this.replyingTo};
+                  
+                  // 清除回复目标
+                  this.replyingTo = null;
+                  
                   // 更新被回复的评论的回复列表
-                  this.fetchReplies(this.replyingTo);
-                  this.replyingTo = null; // 清除回复目标
+                  console.log('获取回复列表，评论ID:', replyToComment.commentID);
+                  this.fetchReplies({commentID: replyToComment.commentID})
+                    .then(() => {
+                      console.log('成功获取回复列表');
+                      // 确保显示回复列表
+                      const targetComment = this.comments.find(c => c.commentID === replyToComment.commentID);
+                      if (targetComment) {
+                        console.log('找到目标评论，设置显示回复');
+                        targetComment.showReplies = true;
+                      } else {
+                        console.error('未找到目标评论');
+                        // 如果找不到目标评论，重新获取所有评论
+                        this.fetchComments(this.post.postID);
+                      }
+                    })
+                    .catch(err => {
+                      console.error('获取回复列表失败:', err);
+                      // 获取回复失败，重新获取所有评论
+                      this.fetchComments(this.post.postID);
+                    });
                 } else {
+                  console.error('回复失败:', response.data);
                   ElNotification({
                     title: '错误',
-                    message: '回复失败',
+                    message: '回复失败: ' + (response.data.message || ''),
                     type: 'error',
                   });
                 }
               })
               .catch(error => {
+                console.error('回复评论错误:', error);
+                console.error('错误详情:', error.response?.data || error.message);
                 ElNotification({
                   title: '错误',
-                  message: '回复时发生错误',
+                  message: '回复时发生错误: ' + (error.response?.data?.message || error.message || ''),
                   type: 'error',
                 });
               });
@@ -658,10 +753,23 @@ export default {
     },
     likeComment(commentID) {
       const token = localStorage.getItem('token');
-      const comment = this.comments.find(c => c.commentID === commentID) ||
-          this.comments.flatMap(c => c.replies).find(r => r.commentID === commentID);
+      console.log('点赞评论ID:', commentID);
+      
+      // 首先在主评论中查找
+      let comment = this.comments.find(c => c.commentID === commentID);
+      
+      // 如果主评论中未找到，则在所有回复中查找
+      if (!comment) {
+        for (let mainComment of this.comments) {
+          if (mainComment.replies && mainComment.replies.length > 0) {
+            comment = mainComment.replies.find(r => r.commentID === commentID);
+            if (comment) break;
+          }
+        }
+      }
 
       if (!comment) {
+        console.error('评论未找到，ID:', commentID);
         ElNotification({
           title: '错误',
           message: '评论未找到',
@@ -669,6 +777,8 @@ export default {
         });
         return;
       }
+
+      console.log('找到评论:', comment);
 
       if (comment.likedByCurrentUser) {
         // 取消点赞
@@ -679,6 +789,7 @@ export default {
           }
         })
             .then(response => {
+              console.log('取消点赞响应:', response.data);
               if (response.data === '取消点赞成功') {
                 comment.likesCount--;
                 comment.likedByCurrentUser = false;
@@ -688,6 +799,7 @@ export default {
                   type: 'success',
                 });
               } else {
+                console.error('取消点赞失败:', response.data);
                 ElNotification({
                   title: '错误',
                   message: '取消点赞失败',
@@ -696,6 +808,7 @@ export default {
               }
             })
             .catch(error => {
+              console.error('取消点赞错误:', error);
               ElNotification({
                 title: '错误',
                 message: '取消点赞时发生错误',
@@ -711,8 +824,9 @@ export default {
           }
         })
             .then(response => {
+              console.log('点赞响应:', response.data);
               if (response.data === '点赞成功') {
-                comment.likesCount++;
+                comment.likesCount = (comment.likesCount || 0) + 1;
                 comment.likedByCurrentUser = true;
                 ElNotification({
                   title: '成功',
@@ -720,6 +834,7 @@ export default {
                   type: 'success',
                 });
               } else {
+                console.error('点赞失败:', response.data);
                 ElNotification({
                   title: '错误',
                   message: '点赞失败',
@@ -728,6 +843,7 @@ export default {
               }
             })
             .catch(error => {
+              console.error('点赞错误:', error);
               ElNotification({
                 title: '错误',
                 message: '点赞时发生错误',
@@ -836,9 +952,18 @@ export default {
     setReplyTarget(comment) {
       this.replyingTo = comment;
       this.newCommentText = `@${comment.userName} `;
-
+      // 设置回复目标后，确保评论栏是可见的
+      this.isContainerVisible = true;
+      // 聚焦到评论输入框
+      this.$nextTick(() => {
+        const textarea = document.querySelector('textarea');
+        if (textarea) {
+          textarea.focus();
+        }
+      });
     },
     clearReplyTarget() {
+      // 仅在用户手动清空输入框内容时清除回复目标
       if (!this.newCommentText.trim()) {
         this.replyingTo = null;
       }
