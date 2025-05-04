@@ -435,6 +435,7 @@ export default {
 
       try {
         const token = localStorage.getItem('token');
+        // 第一步：保存到后端数据库
         const createResp = await axios.post(
           `http://localhost:8080/api/AIGuide/Create?token=${token}`,
           {
@@ -450,6 +451,7 @@ export default {
           screenshotUrl
         };
 
+        // 第二步：调用 AI 分析接口
         const aiMarkdown = await this.callAIAnalysis(
           this.screenshotsCurrent.screenshotUrl,
           this.screenshotsCurrent.exerciseName
@@ -470,6 +472,26 @@ export default {
       } finally {
         this.isAnalyzing = false;
         this.analysisPercentage = 100;
+      }
+    },
+
+    // 新增：调用后端 AI 分析接口
+    async callAIAnalysis(base64Img, exerciseName) {
+      const requestData = {
+        type: 'fitness',
+        params: {
+          base64Img,
+          exerciseName
+        }
+      };
+      const resp = await axios.post(
+        'http://localhost:8080/api/ai/analyzeExercise',
+        requestData
+      );
+      if (resp.data.success) {
+        return resp.data.text;
+      } else {
+        throw new Error(resp.data.text || 'AI 分析失败');
       }
     },
     // getAISuggestions(screenshotID) {
