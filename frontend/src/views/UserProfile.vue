@@ -755,7 +755,7 @@ export default {
             },
           }
         );
-        this.vigorTokenRecords = response.data.records.map((item) => ({
+        this.vigorTokenRecords = response.data.map((item) => ({
           recordID: item.recordID,
           reason: item.reason,
           change: item.change,

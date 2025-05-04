@@ -1,6 +1,7 @@
 package org.fm.backend.service;
 
 import org.fm.backend.dao.VigorTokenMapper;
+import org.fm.backend.dto.BalanceRes;
 import org.fm.backend.dto.ResultMessage;
 import org.fm.backend.model.VigorTokenRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,7 @@ public class VigorTokenService {
         }
         if(vigorTokenMapper.updateVigorTokenBalance(change,userID)) {
             VigorTokenRecord record = new VigorTokenRecord();
+            record.setUserID(userID);
             record.setBalance(balance);
             record.setReason(reason);
             record.setChange(change);
@@ -31,6 +33,12 @@ public class VigorTokenService {
             return new ResultMessage("更新活力币余额成功!");
         }
         return new ResultMessage("更新活力币余额失败!");
+    }
+
+    public BalanceRes getbalance(int userID){
+        BalanceRes balanceRes = new BalanceRes();
+        balanceRes.balance = vigorTokenMapper.getVigorTokenBalance(userID);
+        return balanceRes;
     }
 
     public List<VigorTokenRecord> getVigorTokenRecordList(int userID){
