@@ -397,10 +397,10 @@ export default {
     },
     // 上传图片并调用后端 AI 分析
     async uploadImg() {
-      if (this.vigorTokenBalance < 50) {
+      if (this.vigorTokenBalance <0) {
         ElNotification({
           title: '注意',
-          message: `本功能需要耗费50活力币，您的余额为${this.vigorTokenBalance}，余额不足!`,
+          message: `本功能需要耗费0活力币，您的余额为${this.vigorTokenBalance}，余额不足!`,
           type: 'warning',
           duration: 2000
         });
@@ -408,11 +408,11 @@ export default {
       } else {
         ElNotification({
           title: '提示',
-          message: `本次消费50活力币，您的余额为${this.vigorTokenBalance - 50}`,
+          message: `本次消费0活力币，您的余额为${this.vigorTokenBalance - 0}`,
           type: 'success',
           duration: 2000
         });
-        this.vigorTokenBalance -= 50;
+        this.vigorTokenBalance -= 0;
       }
 
       this.isAnalyzing = true;

@@ -17,9 +17,11 @@ public class VigorTokenService {
     private VigorTokenMapper vigorTokenMapper;
 
     public ResultMessage updateBalance(int userID, String reason, int change){
+        ResultMessage resultMessage = new ResultMessage();
         int balance = vigorTokenMapper.getVigorTokenBalance(userID);
         if(balance + change < 0){
-            return new ResultMessage("更新活力币余额失败!");
+            resultMessage.setMessage("更新活力币余额失败!");
+            return resultMessage;
         }
         if(vigorTokenMapper.updateVigorTokenBalance(change,userID)) {
             VigorTokenRecord record = new VigorTokenRecord();
@@ -30,9 +32,11 @@ public class VigorTokenService {
             record.setBalance(balance+change);
             record.setCreateTime(new Date());
             vigorTokenMapper.insertVigorTokenRecord(record);
-            return new ResultMessage("更新活力币余额成功!");
+            resultMessage.setMessage("更新活力币余额成功!");
+            return resultMessage;
         }
-        return new ResultMessage("更新活力币余额失败!");
+        resultMessage.setMessage("更新活力币余额失败!");
+        return resultMessage;
     }
 
     public BalanceRes getbalance(int userID){

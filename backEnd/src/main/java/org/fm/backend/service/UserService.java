@@ -58,7 +58,9 @@ public class UserService {
 
     public ResultMessage register(RegisterInfo registerInfo){
         if(userMapper.isUserEmailExist(registerInfo.email)) {
-            return new ResultMessage("注册失败：邮箱已存在");
+            ResultMessage resultMessage = new ResultMessage();
+            resultMessage.setMessage("注册失败：邮箱已存在");
+            return resultMessage;
         }
         User user = new User();
         user.setEmail(registerInfo.email);
@@ -81,9 +83,9 @@ public class UserService {
         vigorTokenMapper.setVigorTokenBalance(userID,0);
         vigorTokenService.updateBalance(userID,"注册成功，获取10000活力币",10000);
         //成就系统初始化 to do
-
-
-        return new ResultMessage("成功注册");
+        ResultMessage resultMessage = new ResultMessage();
+        resultMessage.setMessage("成功注册");
+        return resultMessage;
     }
 
     public User getProfile(String token) {
