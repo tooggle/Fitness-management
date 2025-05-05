@@ -1,6 +1,9 @@
 package org.fm.backend.dto;
 
 import lombok.Data;
+
+import java.util.Map;
+
 import lombok.Builder;
 
 @Data
@@ -9,5 +12,5 @@ public class AiResponse {
   private boolean success;
   private String text;
   private String type;
-  // （可选）时间戳、requestId…
+  private Map<String, Object> usage;
 }

@@ -59,4 +59,34 @@ public class OpenAIUtil {
             .replace("\n", "\\n")
             .replace("\r", "\\r");
     }
+
+    public static class AIResBuilder {
+        private String suggestion;
+        private boolean success;
+
+        public AIResBuilder suggestion(String suggestion) {
+            this.suggestion = suggestion;
+            return this;
+        }
+
+        public AIResBuilder success(boolean success) {
+            this.success = success;
+            return this;
+        }
+
+        public AIRes build() {
+            return new AIRes(success, suggestion);
+        }
+    }
+
+    public static class AIRes {
+        private final boolean success;
+        private final String suggestion;
+
+        public AIRes(boolean success, String suggestion) {
+            this.success = success;
+            this.suggestion = suggestion;
+        }
+    }
 }
+

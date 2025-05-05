@@ -2,11 +2,14 @@ package org.fm.backend.dto;
 
 import lombok.Data;
 import lombok.Builder;
+
+import java.util.HashMap;
 import java.util.Map;
 
 @Data
 @Builder
 public class AiRequest {
+  private String prompt;
   /** 业务类型：fitness | meal | post | … */
   private String type;
   
@@ -14,8 +17,13 @@ public class AiRequest {
   private Map<String, Object> params;
 
   public Map<String, Object> toMap() {
-    params.put("type", type);
-    return params;
+    Map<String, Object> map = new HashMap<>();
+        map.put("prompt", this.prompt);
+        map.put("type", this.type);
+        if (params != null) {
+            map.putAll(params); // 将额外的参数加入请求
+        }
+        return map;
   }
 }
 
