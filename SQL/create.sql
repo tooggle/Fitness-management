@@ -347,3 +347,11 @@ CREATE TABLE Workout (
 CREATE TABLE Manager (
     email VARCHAR(100) PRIMARY KEY
 );
+
+--以下是插入必要的值
+INSERT INTO CourseType (typeID, typeName) VALUES
+(0, '未分类'),  -- 默认值
+(1, '高强度间歇'),
+(2, '低强度塑形'),
+(3, '儿童趣味课'),
+(4, '有氧训练');
