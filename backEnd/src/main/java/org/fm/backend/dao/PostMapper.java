@@ -1,9 +1,13 @@
 package org.fm.backend.dao;
 
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.jdbc.SQL;
 import org.fm.backend.dto.PostDTO;
 
 import java.util.List;
+import java.util.Map;
+
+import static org.apache.ibatis.jdbc.SqlBuilder.*;
 
 @Mapper
 public interface PostMapper {
@@ -51,4 +55,13 @@ public interface PostMapper {
 
     @Update("UPDATE posts SET commentsCount = commentsCount - 1 WHERE postID = #{postID}")
     void CommentsCountMinusOne(int postID);
+
+    @SelectProvider(type = PostMapperProvider.class, method = "buildSearchSql")
+    List<PostDTO> search(
+            @Param("query") String query,
+            @Param("category") String category,
+            @Param("dateRange") String dateRange,
+            @Param("sortBy") String sortBy
+    );
+
 }

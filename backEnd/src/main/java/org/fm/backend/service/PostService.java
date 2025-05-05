@@ -366,5 +366,16 @@ public class PostService {
         }
     }
 
+    public List<PostDTO> search(String token, String query, String category, String dateRange, String sortBy) {
+        // 验证 Token
+        TokenValidationResult tokenRes = jwtHelper.validateToken(token);
+        if (!tokenRes.IsValid) {
+            throw new SecurityException("无效的Token");
+        }
+
+        return postMapper.search(query, category, dateRange, sortBy);
+    }
+
+
 
 }

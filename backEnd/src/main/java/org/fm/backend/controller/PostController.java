@@ -149,6 +149,19 @@ public class PostController {
         return postService.forwardPost(token, postID);
     }
 
+    @GetMapping("/SearchPost")
+    public List<PostDTO> searchPost(
+            @RequestHeader("token") String token,
+            @RequestParam String query,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(defaultValue = "postTime") String sortBy
+    ) {
+        log.info("搜索帖子，query: {}, category: {}, dateRange: {}, sortBy: {}", query, category, dateRange, sortBy);
+        return postService.search(token, query, category, dateRange, sortBy);
+    }
+
+
 //    @GetMapping("/GetFitCoachComment")
 //    public void getFitCoachComment(
 //        @RequestParam String postTitle,
