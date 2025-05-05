@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.fm.backend.dto.PostDTO;
 import org.fm.backend.dto.ResultPostId;
 import org.fm.backend.service.PostService;
-import org.fm.backend.service.ai.AiService;
 import org.fm.backend.util.JWTHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -21,8 +20,8 @@ public class PostController {
     @Autowired
     private JWTHelper jwtHelper;
 
-    @Autowired
-    private AiService aiService;
+//    @Autowired
+//    private AiService aiService;
 
     @GetMapping("/GetAllPost")
     public List<PostDTO> GetAllPost(
@@ -150,58 +149,58 @@ public class PostController {
         return postService.forwardPost(token, postID);
     }
 
-    @GetMapping("/GetFitCoachComment")
-    public void getFitCoachComment(
-        @RequestParam String postTitle,
-        @RequestParam Integer postContent
-    ) {
-        log.info("AI接口生成健身教练评论, postTitle: {}", postTitle);
-    
-        Map<String, Object> params = Map.of(
-            "type", "fitness", 
-            "postTitle", postTitle,
-            "postContent", postContent
-        );
-    
-        String comment = aiService.generate(params);
-    
-        log.info("生成的健身教练评论: {}", comment);
-    }
-
-    @GetMapping("/GetNutriExpertComment")
-    public void getNutriExpertComment(
-        @RequestParam String postTitle,
-        @RequestParam Integer postContent
-    ) {
-        log.info("AI接口生成营养专家评论, postTitle: {}", postTitle);
-    
-        Map<String, Object> params = Map.of(
-            "type", "meal", 
-            "postTitle", postTitle,
-            "postContent", postContent
-        );
-    
-        String comment = aiService.generate(params);
-    
-        log.info("生成的营养专家评论: {}", comment);
-    }
-
-    @GetMapping("/GetMotivatorComment")
-    public void getMotivatorComment(
-        @RequestParam String postTitle,
-        @RequestParam Integer postContent
-    ) {
-        log.info("AI接口生成励志导师评论, postTitle: {}", postTitle);
-    
-        Map<String, Object> params = Map.of(
-            "type", "post", 
-            "postTitle", postTitle,
-            "postContent", postContent
-        );
-    
-        String comment = aiService.generate(params);
-    
-        log.info("生成的励志导师评论: {}", comment);
-    }
+//    @GetMapping("/GetFitCoachComment")
+//    public void getFitCoachComment(
+//        @RequestParam String postTitle,
+//        @RequestParam Integer postContent
+//    ) {
+//        log.info("AI接口生成健身教练评论, postTitle: {}", postTitle);
+//
+//        Map<String, Object> params = Map.of(
+//            "type", "fitness",
+//            "postTitle", postTitle,
+//            "postContent", postContent
+//        );
+//
+//        String comment = aiService.generate(params);
+//
+//        log.info("生成的健身教练评论: {}", comment);
+//    }
+//
+//    @GetMapping("/GetNutriExpertComment")
+//    public void getNutriExpertComment(
+//        @RequestParam String postTitle,
+//        @RequestParam Integer postContent
+//    ) {
+//        log.info("AI接口生成营养专家评论, postTitle: {}", postTitle);
+//
+//        Map<String, Object> params = Map.of(
+//            "type", "meal",
+//            "postTitle", postTitle,
+//            "postContent", postContent
+//        );
+//
+//        String comment = aiService.generate(params);
+//
+//        log.info("生成的营养专家评论: {}", comment);
+//    }
+//
+//    @GetMapping("/GetMotivatorComment")
+//    public void getMotivatorComment(
+//        @RequestParam String postTitle,
+//        @RequestParam Integer postContent
+//    ) {
+//        log.info("AI接口生成励志导师评论, postTitle: {}", postTitle);
+//
+//        Map<String, Object> params = Map.of(
+//            "type", "post",
+//            "postTitle", postTitle,
+//            "postContent", postContent
+//        );
+//
+//        String comment = aiService.generate(params);
+//
+//        log.info("生成的励志导师评论: {}", comment);
+//    }
 
 }

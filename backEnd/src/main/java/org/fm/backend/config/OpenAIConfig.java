@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpenAIConfig {
 
-    @Value("${openai.api.key}") // 从配置文件中加载 API 密钥
+    //@Value("${openai.api.key}") // 从配置文件中加载 API 密钥
     private String apiKey;
 
     // Getter 方法
