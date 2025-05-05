@@ -355,3 +355,38 @@ INSERT INTO CourseType (typeID, typeName) VALUES
 (2, '低强度塑形'),
 (3, '儿童趣味课'),
 (4, '有氧训练');
+
+-- 1. 修改 Coach 表的 iconURL
+ALTER TABLE Coach MODIFY COLUMN iconURL MEDIUMTEXT;
+
+-- 2. 修改 Course 表的 coursePhotoUrl 和 courseVideoUrl
+ALTER TABLE Course MODIFY COLUMN coursePhotoUrl MEDIUMTEXT;
+ALTER TABLE Course MODIFY COLUMN courseVideoUrl MEDIUMTEXT;
+
+-- 3. 修改 Exercise 表的 gifUrl 和 coverUrl
+ALTER TABLE Exercise MODIFY COLUMN gifUrl MEDIUMTEXT;
+ALTER TABLE Exercise MODIFY COLUMN coverUrl MEDIUMTEXT;
+
+-- 4. 修改 FitnessEquiOperation 表的 imgUrl
+ALTER TABLE FitnessEquiOperation MODIFY COLUMN imgUrl MEDIUMTEXT;
+
+-- 5. 修改 FitnessSuggestion 表的 screenshotUrl
+ALTER TABLE FitnessSuggestion MODIFY COLUMN screenshotUrl MEDIUMTEXT;
+
+-- 6. 修改 MealRecords 表的 mealPhoto
+ALTER TABLE MealRecords MODIFY COLUMN mealPhoto MEDIUMTEXT;
+
+-- 7. 修改 Posts 表的 imgUrl
+ALTER TABLE Posts MODIFY COLUMN imgUrl MEDIUMTEXT;
+
+-- 8. 修改 Recipes 表的 imgUrl
+ALTER TABLE Recipes MODIFY COLUMN imgUrl MEDIUMTEXT;
+
+-- 9. 修改 Trainee 表的 iconURL
+ALTER TABLE Trainee MODIFY COLUMN iconURL MEDIUMTEXT;
+
+-- 10. 修改 User 表的 iconURL
+ALTER TABLE User MODIFY COLUMN iconURL MEDIUMTEXT;
+
+-- 11. 修改 Workout 表的 coverUrl
+ALTER TABLE Workout MODIFY COLUMN coverUrl MEDIUMTEXT;
