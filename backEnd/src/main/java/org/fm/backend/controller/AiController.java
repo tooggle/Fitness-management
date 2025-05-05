@@ -53,6 +53,7 @@ public class AiController {
     }
 
     String result = aiService.analyzeExercise(base64Img, exerciseName);
+    System.out.println(result);
     return AiResponse.builder()
                      .success(true)
                      .text(result)

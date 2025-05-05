@@ -740,7 +740,7 @@ export default {
           classID: -1,
           typeID: this.getCourseValue(this.newCourse.courseType),
           courseName: this.newCourse.courseName,
-          capacity: this.newCourse.capacity,
+          Capacity: this.newCourse.capacity,
           courseDescription: this.newCourse.courseDescription,
           coursePrice: this.newCourse.coursePrice,
           courseStartTime: this.newCourse.courseStartTime,

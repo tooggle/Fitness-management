@@ -72,7 +72,7 @@ public class UserService {
         user.setIsPost(1);
         userMapper.insertUser(user);
         int userID = user.getUserID();
-        if(registerInfo.role == "coach"){
+        if(registerInfo.role.equals("coach")){
             Coach coach = new Coach();
             coach.setCoachID(userID);
             coach.setUserName(registerInfo.accountName);

@@ -43,9 +43,9 @@ public interface UserMapper {
     String getRoleByUserId(int userID);
 
     @Insert({"INSERT INTO User(userName, password,  Email, registrationTime, age, gender, " +
-            "isMember, isPost, isDelete, iconURL, tags, introduction, goalType, goalWeight) " +
+            "isMember, isPost, isDelete, iconURL, tags, introduction, goalType, goalWeight, role) " +
             "VALUES(#{userName}, #{password}, #{email}, #{registrationTime}, #{age}, #{gender}, " +
-            "#{isMember}, #{isPost}, #{isDelete}, #{iconURL}, #{tags}, #{introduction}, #{goalType}, #{goalWeight})"})
+            "#{isMember}, #{isPost}, #{isDelete}, #{iconURL}, #{tags}, #{introduction}, #{goalType}, #{goalWeight}, #{role})"})
     @Options(useGeneratedKeys = true, keyProperty = "userID", keyColumn = "userID")
     boolean insertUser(User user);
 
