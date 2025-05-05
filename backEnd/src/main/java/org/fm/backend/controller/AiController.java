@@ -16,7 +16,14 @@ public class AiController {
   private final AiService aiService;
 
   @PostMapping("/generate")
-  public AiResponse generate(@RequestBody AiRequest req) {
+  public AiResponse generate(
+      @RequestHeader(value = "Authorization", required = false) String authorization,
+      @RequestBody AiRequest req) {
+    AiResponse authFail = checkAuth(authorization);
+    if (authFail != null) {
+      return authFail;
+    }
+
     String result = aiService.generate(req.toMap());
     return AiResponse.builder()
                      .success(true)
@@ -26,7 +33,15 @@ public class AiController {
   }
 
   @PostMapping("/analyzeExercise")
-  public AiResponse analyzeExercise(@RequestBody AiRequest req) {
+  public AiResponse analyzeExercise(
+      @RequestHeader(value = "Authorization", required = false) String authorization,
+      @RequestBody AiRequest req) {
+    // 校验 Token
+    AiResponse authFail = checkAuth(authorization);
+    if (authFail != null) {
+      return authFail;
+    }
+
     String base64Img = (String) req.getParams().get("base64Img");
     String exerciseName = (String) req.getParams().get("exerciseName");
 
@@ -37,12 +52,32 @@ public class AiController {
                        .build();
     }
 
-    // 调用分析功能
     String result = aiService.analyzeExercise(base64Img, exerciseName);
     return AiResponse.builder()
                      .success(true)
                      .text(result)
                      .type(req.getType())
                      .build();
+  }
+
+  private AiResponse checkAuth(String authorization) {
+    if (authorization == null || !authorization.startsWith("Bearer ")) {
+      return AiResponse.builder()
+                       .success(false)
+                       .text("缺少或无效的 Authorization token")
+                       .build();
+    }
+    String token = authorization.substring(7);
+    if (!isValidToken(token)) {
+      return AiResponse.builder()
+                       .success(false)
+                       .text("无效的 token")
+                       .build();
+    }
+    return null;
+  }
+
+  private boolean isValidToken(String token) {
+    return true;
   }
 }

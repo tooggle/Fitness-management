@@ -395,9 +395,8 @@ export default {
         })
       })
     },
-    // 上传图片并调用后端 AI 分析
     async uploadImg() {
-      if (this.vigorTokenBalance <0) {
+      if (this.vigorTokenBalance < 0) {
         ElNotification({
           title: '注意',
           message: `本功能需要耗费0活力币，您的余额为${this.vigorTokenBalance}，余额不足!`,
@@ -405,21 +404,20 @@ export default {
           duration: 2000
         });
         return;
-      } else {
-        ElNotification({
-          title: '提示',
-          message: `本次消费0活力币，您的余额为${this.vigorTokenBalance - 0}`,
-          type: 'success',
-          duration: 2000
-        });
-        this.vigorTokenBalance -= 0;
       }
+      ElNotification({
+        title: '提示',
+        message: `本次消费0活力币，您的余额为${this.vigorTokenBalance}`,
+        type: 'success',
+        duration: 2000
+      });
+      this.vigorTokenBalance -= 0;
 
       this.isAnalyzing = true;
       this.analysisStatue = 1;
       this.analysisPercentage = 0;
 
-      if (!this.screenShotUrl) {
+      if (!this.screenshotsCurrent.screenshotUrl) {
         ElNotification({
           title: '注意',
           message: `请先上传图片或检查图片是否上传成功`,
@@ -433,67 +431,79 @@ export default {
       const randomTimeout = Math.floor(Math.random() * 250) + 50;
       this.refreshProgress(randomTimeout);
 
+      const token = localStorage.getItem('token');
+      this.cancelSource = axios.CancelToken.source();
+
       try {
-        const token = localStorage.getItem('token');
-        // 第一步：保存到后端数据库
-        const createResp = await axios.post(
-          `http://localhost:8080/api/AIGuide/Create?token=${token}`,
+        const resp = await axios.post(
+          'http://localhost:8080/api/ai/analyzeExercise',
           {
-            exerciseName: this.screenshotsCurrent.exerciseName,
-            screenshotUrl: this.screenshotsCurrent.screenshotUrl
+            type: 'fitness',
+            params: {
+              base64Img: this.screenshotsCurrent.screenshotUrl,
+              exerciseName: this.screenshotsCurrent.exerciseName
+            }
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            },
+            timeout: 60000,                    // 60 秒超时
+            cancelToken: this.cancelSource.token
           }
         );
-        const { screenshotID, createTime, screenshotUrl } = createResp.data;
-        this.screenshotsCurrent = {
-          ...this.screenshotsCurrent,
-          screenshotID,
-          createTime: new Date(createTime),
-          screenshotUrl
-        };
 
-        // 第二步：调用 AI 分析接口
-        const aiMarkdown = await this.callAIAnalysis(
-          this.screenshotsCurrent.screenshotUrl,
-          this.screenshotsCurrent.exerciseName
-        );
+        if (!resp.data.success) {
+          throw new Error(resp.data.text || 'AI 分析返回失败');
+        }
 
-        this.markdownText = aiMarkdown;
+        this.markdownText   = resp.data.text;
         this.successAnalyze = true;
-        this.analysisStatue = 0; // 分析成功
+        this.analysisStatue = 0;
       } catch (error) {
-        console.error('AI 分析失败：', error);
-        this.analysisStatue = 2; // 分析失败
-        ElNotification({
-          title: '错误',
-          message: '分析失败，请重试或联系管理员',
-          type: 'error',
-          duration: 3000
-        });
+        if (axios.isCancel(error)) {
+          console.warn('分析已被取消');
+        } else {
+          console.error('AI 分析失败：', error);
+          ElNotification({
+            title: '错误',
+            message: error.message || '分析失败，请重试或联系管理员',
+            type: 'error',
+            duration: 3000
+          });
+        }
+        this.analysisStatue = 2;
       } finally {
-        this.isAnalyzing = false;
+        this.isAnalyzing        = false;
         this.analysisPercentage = 100;
       }
     },
 
-    // 新增：调用后端 AI 分析接口
+    cancelTrack() {
+      if (this.cancelSource) {
+        this.cancelSource.cancel('用户取消分析');
+      }
+    },
+
     async callAIAnalysis(base64Img, exerciseName) {
-      const requestData = {
-        type: 'fitness',
-        params: {
-          base64Img,
-          exerciseName
-        }
-      };
+      const token = localStorage.getItem('token');
       const resp = await axios.post(
         'http://localhost:8080/api/ai/analyzeExercise',
-        requestData
+        {
+          type: 'fitness',
+          params: { base64Img, exerciseName }
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 60000
+        }
       );
       if (resp.data.success) {
         return resp.data.text;
-      } else {
-        throw new Error(resp.data.text || 'AI 分析失败');
       }
+      throw new Error(resp.data.text || 'AI 分析失败');
     },
+
     // getAISuggestions(screenshotID) {
     //   console.log('获取AI建议:', screenshotID)
     //   axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
