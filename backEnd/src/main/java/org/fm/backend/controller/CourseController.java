@@ -66,4 +66,40 @@ public class CourseController {
         return courseServie.getReservedCourseByUserID(token);
     }
 
+    @GetMapping("/GetParticipatedCourseByUserID")
+    public List<CourseDTO> GetParticipatedCourseByUserID(String token){
+        return courseServie.getParticipatedCourseByUserID(token);
+    }
+
+    @GetMapping("/GetCoachParticipatedCourseByUserID")
+    public List<CourseDTO> GetPublishedCourseByUserID(String token){
+        return courseServie.getPublishedCourseByUserID(token);
+    }
+
+    @GetMapping("/GetTodayCoursesByUserID")
+    public List<CourseInfo> GetTodayCoursesByUserID(String token){
+        return courseServie.getTodayCoursesByUserID(token);
+    }
+
+    @GetMapping("/GetCoachTodayCoursesByUserID")
+    public List<CourseInfo> GetCoachTodayCoursesByUserID(String token){
+        return courseServie.getCoachTodayCoursesByUserID(token);
+    }
+
+    @GetMapping("/SearchCourse")
+    public List<Course> SearchCourse(String token,String keyword,Integer typeID,Integer minPrice,Integer maxPrice) {
+        return courseServie.searchCourse(token, keyword, typeID, minPrice, maxPrice);
+    }
+
+    @PostMapping("/GradeCourse")
+    public String GradeCourse(@RequestBody GradeCourseInfo gradeCourseInfo) {
+        return courseServie.gradeCourse(gradeCourseInfo.token,gradeCourseInfo.classID,gradeCourseInfo.grade);
+    }
+
+    @PostMapping("/PublishComment")
+    public String PublishComment (@RequestBody PublishCommentInfo publishCommentInfo) {
+        return courseServie.publishComment(publishCommentInfo.token,publishCommentInfo.classID,publishCommentInfo.comment);
+    }
+
+
 }
