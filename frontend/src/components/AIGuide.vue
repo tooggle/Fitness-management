@@ -490,7 +490,7 @@ export default {
           return;
         }
 
-        axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion/`, {
+        axios.get(`http://localhost:8080/api/AIGuide/GetAISuggestion`, {
           params: {
             screenshotID: screenshotID
           }
@@ -532,8 +532,8 @@ export default {
       const token = localStorage.getItem('token');
       axios.get(`http://localhost:8080/api/AIGuide/GetAllDetails?token=${token}`)
         .then(response => {
-          console.log(response.data.suggestions)
-          response.data.suggestions.forEach(item => {
+          console.log(response.data)
+          response.data.forEach(item => {
             const screenshot = {
               exerciseName: item.exerciseName,
               screenshotID: item.screenshotID,

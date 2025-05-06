@@ -109,11 +109,15 @@ public class UserController {
 
     @GetMapping("/GetVigorTokenBalance")
     public BalanceRes GetVigorTokenBalance(String token,int userID){
-        return vigorTokenService.getbalance(userID);
+        TokenValidationResult tokenRes = jwtHelper.validateToken(token);
+        int id = tokenRes.userID;
+        return vigorTokenService.getbalance(id);
     }
 
     @GetMapping("/GetVigorTokenReacords")
     public List<VigorTokenRecord> getVigorTokenReacords(String token,int userID){
-        return vigorTokenService.getVigorTokenRecordList(userID);
+        TokenValidationResult tokenRes = jwtHelper.validateToken(token);
+        int id = tokenRes.userID;
+        return vigorTokenService.getVigorTokenRecordList(id);
     }
 }
