@@ -50,7 +50,7 @@ public interface CourseMapper {
     @Delete("DELETE FROM Course WHERE classID = #{classID}")
     boolean deleteByClassID(int classID);
 
-    // 根据 classID 更新课程
+    // 更新课程
     @Update({"UPDATE Course SET typeID=#{typeID}, courseName=#{courseName}, " +
             "Capacity=#{Capacity}, courseDescription=#{courseDescription}, " +
             "coursePrice=#{coursePrice}, courseStartTime=#{courseStartTime}, " +

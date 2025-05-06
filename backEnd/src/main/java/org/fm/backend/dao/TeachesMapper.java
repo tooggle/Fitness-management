@@ -21,7 +21,7 @@ public interface TeachesMapper {
         """)
     boolean insert(Teaches teaches);
 
-    // 根据 coachID 和 classID 删除记录（支持事务）
+    // 根据 coachID 和 classID 删除记录
     @Delete("""
         DELETE FROM Teaches 
         WHERE coachID = #{coachID} AND classID = #{classID}

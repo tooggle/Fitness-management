@@ -13,7 +13,7 @@ public interface CourseScheduleMapper {
         INSERT INTO CourseSchedule (classID, dayOfWeek, classTime)
         VALUES (#{classID}, #{dayOfWeek}, #{classTime})
         """)
-    boolean insertCourseSchedule(CourseSchedule courseSchedule);
+    boolean insertCourseSchedule(int classID, int dayOfWeek, String classTime);
 
     // 按 classID 删除课程时间表
     @Delete("DELETE FROM CourseSchedule WHERE classID = #{classID}")
