@@ -101,40 +101,7 @@ export default
 
         methods: {
             async submitForm(role) {
-                //测试使用：
-                // 预设的万能账号信息
-                const superUserEmail = 'superuser@example.com';
-                const superUserPassword = 'admin123';
-
-                // 检查是否是万能账号
-                if (
-                this.LogInForm.email === superUserEmail &&
-                this.LogInForm.password === superUserPassword
-                ) {
-                // 直接设置 Vuex 状态
-                store.commit('setRole', 'admin'); // 假设万能账号是管理员角色
-                store.commit('setToken', 'superuser-token'); // 设置一个模拟的 token
-                store.commit('setUserID', 'superuser-id'); // 设置一个模拟的用户 ID
-                store.commit('setName', 'Super User'); // 设置用户名
-                store.commit('setIconUrl', '/path/to/superuser/icon.jpg'); // 设置用户头像路径
-                store.commit('setEmail', superUserEmail); // 设置邮箱
-                store.commit('setIntroduction', 'This is a super user.'); // 设置用户简介
-                store.commit('setIsPost', true); // 假设万能账号有发帖权限
-
-                // 跳转到管理员页面
-                this.$router.push({ path: '/admin' });
-
-                // 显示通知
-                ElNotification({
-                    message: '登录成功（万能账号）',
-                    type: 'success',
-                    duration: 2000,
-                });
-
-                return; // 退出方法，不再执行后续代码
-                }
-
-                //以上测试使用
+                
                 try {
                     if (role === 'admin') {
                         this.LogInForm.role = 'admin';
