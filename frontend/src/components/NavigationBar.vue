@@ -7,7 +7,6 @@
             <nav>
                 <!-- 导航栏选项 -->
                 <input type="radio" name="tab" id="home" :checked="$route.path === '/home' || $route.path === '/'">
-                <input type="radio" name="tab" id="equipment" :checked="$route.path === '/equipment'">
                 <input type="radio" name="tab" id="aifit" :checked="$route.path === '/aifit'">
                 <input type="radio" name="tab" id="forum" :checked="$route.path === '/forum'">
                 <input type="radio" name="tab" id="achievement" :checked="$route.path === '/achievements'">
@@ -40,12 +39,6 @@
                     <router-link to="/course" class="nav-link">
                         <el-icon><Notebook /></el-icon>
                         健身课程
-                    </router-link>
-                </label>
-                <label for="equipment" class="equipment" @click="delayedNavigation('/equipment')">
-                    <router-link to="/equipment" class="nav-link">
-                        <el-icon><Basketball /></el-icon>
-                        健身器材
                     </router-link>
                 </label>
                 <label for="healthyDiet" class="healthyDiet" @click="delayedNavigation('/healthyDiet')">
@@ -99,7 +92,6 @@ import router from "../router/index.js";
 import axios from "axios";
 import { ElNotification } from "element-plus";
 import { commonMixin } from '../mixins/checkLoginState';
-import { Basketball } from "@element-plus/icons-vue";
 
 export default {
     name: "NavigationBar",
@@ -267,7 +259,6 @@ body {
 }
 
 .wrapper nav #home:checked~label.home a,
-.wrapper nav #equipment:checked~label.equipment a,
 .wrapper nav #aifit:checked~label.aifit a,
 .wrapper nav #forum:checked~label.forum a,
 .wrapper nav #course:checked~label.course a,
@@ -275,10 +266,6 @@ body {
 .wrapper nav #healthyDiet:checked~label.healthyDiet a {
     color: #fff;
     transition: 0.6s;
-}
-
-.wrapper nav #equipment:checked~.tab {
-    left: 57.5%;
 }
 
 .wrapper nav #aifit:checked~.tab {
