@@ -213,4 +213,36 @@ public class MealRecordService {
             return deleteRes;
         }
     }
+
+    public List<AISummaryRes> getAISummary(int userID, Date date) {
+        // 1. 根据 userID 和 date 获取所有的 MealRecords
+        List<MealRecords> records = mealRecordMapper.getAllMealRecords(userID, date);
+
+        List<AISummaryRes> summaries = new ArrayList<>();
+
+        for (MealRecords record : records) {
+            AISummaryRes summary = new AISummaryRes();
+
+            // 2. 设置 recordID, mealTime 和 mealPhoto
+            summary.setRecordID(record.getRecordID());
+            summary.setMealTime(record.getMealTime());
+
+            // 3. 根据 recordID 获取对应的 foods
+            List<MealRecordsFood> foods = mealRecordMapper.getMealRecordsFoods(record.getRecordID());
+
+            List<AISummaryRes.FoodRecord> foodRecords = new ArrayList<>();
+            for (MealRecordsFood food : foods) {
+                AISummaryRes.FoodRecord foodRecord = new AISummaryRes.FoodRecord();
+                foodRecord.setFoodName(food.getFoodName());
+                foodRecord.setFoodAmount(food.getFoodAmount());
+                foodRecords.add(foodRecord);
+            }
+
+            summary.setFoods(foodRecords);
+
+            summaries.add(summary);
+        }
+
+        return summaries;
+    }
 }
