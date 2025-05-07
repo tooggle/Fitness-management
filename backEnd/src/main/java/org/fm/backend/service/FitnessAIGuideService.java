@@ -7,10 +7,12 @@ import org.fm.backend.dto.ScreenshotRes;
 import org.fm.backend.model.FitnessSuggestion;
 import org.fm.backend.util.AIHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
+import org.fm.backend.config.WebConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -31,6 +33,9 @@ public class FitnessAIGuideService {
     @Autowired
     AIHelper aiHelper;
 
+    @Value("${file.upload-dir}") // 添加这个注解
+    private String uploadDir;
+
     private String getFileExtensionFromBase64(String base64Header) {
         // 从类似 "data:image/png;base64" 的字符串中提取类型
         if (base64Header.contains("png")) return ".png";
@@ -49,25 +54,22 @@ public class FitnessAIGuideService {
         // 2. 解码Base64
         byte[] imageBytes = Base64.getDecoder().decode(imageData);
 
-        // 3. 获取static/pictures目录
-        ClassPathResource staticResource = new ClassPathResource("static");
-        Path picturesPath = Paths.get(staticResource.getFile().getAbsolutePath(), "pictures");
-
-        // 4. 确保目录存在
-        if (!picturesPath.toFile().exists()) {
-            picturesPath.toFile().mkdirs();
+        // 3. 创建上传目录（如果不存在）
+        Path uploadPath = Paths.get(uploadDir, "pictures");
+        System.out.println("文件将保存到: " + uploadPath.toAbsolutePath());
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
         }
 
         // 5. 生成唯一文件名（根据MIME类型确定扩展名）
         String fileExtension = getFileExtensionFromBase64(parts[0]);
         String filename = "img_" + System.currentTimeMillis() + fileExtension;
-        Path filePath = picturesPath.resolve(filename);
+        Path filePath = uploadPath.resolve(filename);
 
-        // 6. 保存文件,保存到的是target/目录下
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            fos.write(imageBytes);
-        }
-        String fileUrl = "http://localhost:8080/pictures/" + filename;
+        // 5. 保存文件到项目根目录的uploads/pictures
+        Files.write(filePath, imageBytes);
+
+        String fileUrl = "http://localhost:8080/uploads/pictures/" + filename;
         FitnessSuggestion fitnessSuggestion = new FitnessSuggestion();
         fitnessSuggestion.setUserID(userID);
         fitnessSuggestion.setExerciseName(screenshotInfo.exerciseName);
