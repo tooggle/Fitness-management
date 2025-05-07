@@ -250,7 +250,7 @@ body {
 .wrapper nav .tab {
     position: absolute;
     height: 100%;
-    width: 14.3%;
+    width: 16.67%; /* 更新为6个选项的宽度 */
     left: 0px;
     bottom: 0px;
     background: linear-gradient(to right, #6a11cb, #2575fc);
@@ -268,24 +268,24 @@ body {
     transition: 0.6s;
 }
 
-.wrapper nav #aifit:checked~.tab {
-    left: 28.5%;
+.wrapper nav #plan:checked~.tab {
+    left: 16.67%;
 }
 
-.wrapper nav #forum:checked~.tab {
-    left: 85.7%;
+.wrapper nav #aifit:checked~.tab {
+    left: 33.34%;
 }
 
 .wrapper nav #course:checked~.tab {
-    left: 42.9%;
-}
-
-.wrapper nav #plan:checked~.tab {
-    left: 14.3%;
+    left: 50%;
 }
 
 .wrapper nav #healthyDiet:checked~.tab {
-    left: 71.6%;
+    left: 66.67%;
+}
+
+.wrapper nav #forum:checked~.tab {
+    left: 83.34%;
 }
 
 .avatar-container {
