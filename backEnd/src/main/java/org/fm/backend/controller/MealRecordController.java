@@ -79,7 +79,7 @@ public class MealRecordController {
 //    }
 //
     @GetMapping("/GetAISummary")
-    public String getAISummary(@RequestParam String token,
+    public AISum getAISummary(@RequestParam String token,
                                       @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date date) {
         TokenValidationResult validationResult = jwtHelper.validateToken(token);
         if (!validationResult.IsValid) {
@@ -119,8 +119,7 @@ public class MealRecordController {
         String ans = aiHelper.getResponse(prePrompt.toString());
 
         // 4. 返回结果
-        return ans;
-
+        return AISum.builder().message(ans).build();
     }
 //
 //    public static class AIResBuilder {
