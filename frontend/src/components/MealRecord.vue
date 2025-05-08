@@ -48,7 +48,7 @@
                     </el-table>
                     <div class="ai-suggestion-container">
                       <div class="ai-suggestion-header">
-                        <h4 :style="{ fontSize: '20px !important' }">AI建议：</h4>
+                        <h4 :style="{ fontSize: '20px !important' }"> </h4>
                       </div>
                       <el-skeleton v-if="record.loading" :rows="1" animated>
                         <template #template>
@@ -235,7 +235,7 @@
                 <div class="loader"></div>
                 <div class="loading-text">
                   <p class="fade-in" style="color:black">日期：{{ this.formatDate(this.selectedDate) }}</p>
-                  <p class="fade-in" style="animation-delay: 1s; color:black;">使用模型：通义千问</p>
+                  <p class="fade-in" style="animation-delay: 1s; color:black;">使用模型：deepseek</p>
                   <p class="fade-in" style="animation-delay: 2s; color:black;">当日摄取卡路里总量：{{ this.countCarlorie() }} kCal</p>
                   <p class="fade-in" style="animation-delay: 3s; color:black;">正在生成总结，请稍等...</p>
                 </div>
