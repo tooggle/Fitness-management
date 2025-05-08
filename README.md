@@ -1,5 +1,5 @@
 ﻿# Fitness Management System
 
-目前主体框架已完成。
+这是1.0版本
 
 
