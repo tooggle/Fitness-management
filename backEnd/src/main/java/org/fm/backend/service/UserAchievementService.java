@@ -57,7 +57,7 @@ public class UserAchievementService {
     public boolean updateFoodPlanAchievement(int userId) {
         try {
             // 检查用户是否已经达成该成就
-            boolean isAchieved = userAchievementMapper.isAchieved(userId, 7);
+            Boolean isAchieved = userAchievementMapper.isAchieved(userId, 7);
             if (!isAchieved) {
                 // 如果未达成成就，奖励活力币
                 vigorTokenService.updateBalance(userId, "完成饮食计划，获得100活力币", 100);

@@ -22,7 +22,7 @@ public interface UserAchievementMapper {
     // 检查是否已完成成就
     @Select("SELECT isAchieved FROM UserAchievement " +
             "WHERE userID = #{userId} AND achievementID = #{achievementId}")
-    boolean isAchieved(
+    Boolean isAchieved(
             @Param("userId") int userId,
             @Param("achievementId") int achievementId);
 
